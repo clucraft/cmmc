@@ -856,6 +856,433 @@ h3 {
   background: #d32f2f;
 }
 
+/* Dashboard Metrics Row */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.metric-card h3 {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.metric-subtitle {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* SPRS Gauge */
+.sprs-gauge-card {
+  text-align: center;
+}
+
+.gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge {
+  width: 180px;
+  height: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-body {
+  width: 100%;
+  height: 0;
+  padding-bottom: 50%;
+  background: #e0e0e0;
+  border-top-left-radius: 100% 200%;
+  border-top-right-radius: 100% 200%;
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: inherit;
+  height: 100%;
+  background: #4caf50;
+  transform-origin: center top;
+  transform: rotate(-90deg);
+  transition: transform 0.5s ease-out;
+}
+
+.gauge-cover {
+  width: 75%;
+  height: 150%;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1.5rem;
+}
+
+.gauge-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 180px;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* Donut Chart */
+.donut-card {
+  text-align: center;
+}
+
+.donut-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.donut-chart {
+  width: 140px;
+  height: 140px;
+}
+
+.donut-text {
+  font-size: 0.5rem;
+  fill: #333;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.donut-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.green { background: #4caf50; }
+.legend-dot.orange { background: #ff9800; }
+.legend-dot.gray { background: #e0e0e0; }
+
+/* Level Bars */
+.levels-card .level-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.level-bar-group {
+  width: 100%;
+}
+
+.level-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.level-bar-track {
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.level-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease-out;
+}
+
+.level-bar-fill.level1 {
+  background: linear-gradient(90deg, #2196f3, #64b5f6);
+}
+
+.level-bar-fill.level2 {
+  background: linear-gradient(90deg, #9c27b0, #ba68c8);
+}
+
+/* POA&M Summary */
+.poam-summary-card .poam-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.poam-status-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.poam-status-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.poam-status-value.open { color: #1565c0; }
+.poam-status-value.in-progress { color: #ff9800; }
+.poam-status-value.delayed { color: #f44336; }
+.poam-status-value.completed { color: #4caf50; }
+
+.poam-status-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Evidence Card */
+.evidence-card {
+  text-align: center;
+}
+
+.evidence-stat {
+  margin-bottom: 1rem;
+}
+
+.evidence-percentage {
+  font-size: 3rem;
+  font-weight: 700;
+  display: block;
+}
+
+.evidence-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.evidence-details {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 0.85rem;
+}
+
+.evidence-good { color: #4caf50; }
+.evidence-bad { color: #f44336; }
+
+/* Alert Section - Overdue POA&Ms */
+.alert-section {
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.alert-header {
+  color: #e65100;
+  margin-bottom: 1rem;
+}
+
+.overdue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.overdue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.overdue-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.overdue-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.overdue-practice {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.overdue-weakness {
+  font-size: 0.85rem;
+  color: #666;
+  max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overdue-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.overdue-days {
+  font-weight: 600;
+  color: #f44336;
+  font-size: 0.85rem;
+}
+
+.priority-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.priority-badge.low { background: #e8f5e9; color: #2e7d32; }
+.priority-badge.medium { background: #fff3e0; color: #e65100; }
+.priority-badge.high { background: #ffebee; color: #c62828; }
+.priority-badge.critical { background: #c62828; color: white; }
+
+/* Control Family Heatmap */
+.heatmap-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 120px;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.heatmap-cell.heat-green { background: linear-gradient(135deg, #4caf50, #66bb6a); }
+.heatmap-cell.heat-yellow { background: linear-gradient(135deg, #ff9800, #ffb74d); }
+.heatmap-cell.heat-orange { background: linear-gradient(135deg, #f57c00, #ff9800); }
+.heatmap-cell.heat-red { background: linear-gradient(135deg, #f44336, #ef5350); }
+
+.heatmap-id {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.heatmap-percent {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.heatmap-name {
+  font-size: 0.7rem;
+  text-align: center;
+  opacity: 0.9;
+  margin-top: 0.25rem;
+}
+
+.heatmap-count {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Upcoming Deadlines */
+.upcoming-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upcoming-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f5f7fa;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+}
+
+.upcoming-item:hover {
+  background: #e3e7ed;
+}
+
+.upcoming-practice {
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.upcoming-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upcoming-days {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 /* Print Styles */
 @media print {
   .sidebar {

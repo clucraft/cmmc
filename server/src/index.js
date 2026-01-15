@@ -55,18 +55,21 @@ app.get('/api/health', (req, res) => {
 // ============ DASHBOARD ============
 app.get('/api/dashboard', async (req, res) => {
   try {
-    const [practices, assessments, poams] = await Promise.all([
-      prisma.practice.count(),
-      prisma.assessment.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      }),
-      prisma.pOAM.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      }),
-    ]);
+    // Get all practices with their assessments for detailed stats
+    const allPractices = await prisma.practice.findMany({
+      include: { assessments: true, evidence: true },
+    });
 
+    // Get POA&M data including overdue items
+    const allPoams = await prisma.pOAM.findMany({
+      include: {
+        practice: { include: { family: true } },
+        milestones: true,
+      },
+      orderBy: { scheduledCompletionDate: 'asc' },
+    });
+
+    // Calculate status counts
     const statusCounts = {
       NOT_STARTED: 0,
       IN_PROGRESS: 0,
@@ -74,30 +77,118 @@ app.get('/api/dashboard', async (req, res) => {
       NOT_APPLICABLE: 0,
     };
 
-    assessments.forEach((a) => {
-      statusCounts[a.status] = a._count.status;
-    });
-
-    const poamCounts = {
-      OPEN: 0,
-      IN_PROGRESS: 0,
-      COMPLETED: 0,
-      DELAYED: 0,
-      CANCELLED: 0,
+    // Calculate level breakdown
+    const levelStats = {
+      level1: { total: 0, implemented: 0 },
+      level2: { total: 0, implemented: 0 },
     };
 
-    poams.forEach((p) => {
-      poamCounts[p.status] = p._count.status;
+    // Evidence coverage
+    let implementedWithEvidence = 0;
+    let implementedWithoutEvidence = 0;
+
+    allPractices.forEach((p) => {
+      const status = p.assessments[0]?.status || 'NOT_STARTED';
+      statusCounts[status]++;
+
+      // Level breakdown
+      if (p.cmmcLevel === 1) {
+        levelStats.level1.total++;
+        if (status === 'IMPLEMENTED' || status === 'NOT_APPLICABLE') {
+          levelStats.level1.implemented++;
+        }
+      } else {
+        levelStats.level2.total++;
+        if (status === 'IMPLEMENTED' || status === 'NOT_APPLICABLE') {
+          levelStats.level2.implemented++;
+        }
+      }
+
+      // Evidence coverage for implemented practices
+      if (status === 'IMPLEMENTED') {
+        if (p.evidence && p.evidence.length > 0) {
+          implementedWithEvidence++;
+        } else {
+          implementedWithoutEvidence++;
+        }
+      }
     });
 
+    // POA&M stats
+    const now = new Date();
+    const poamCounts = { OPEN: 0, IN_PROGRESS: 0, COMPLETED: 0, DELAYED: 0, CANCELLED: 0 };
+    const overduePoams = [];
+    const upcomingPoams = [];
+
+    allPoams.forEach((p) => {
+      poamCounts[p.status]++;
+
+      // Check for overdue (not completed and past due date)
+      if (p.scheduledCompletionDate && p.status !== 'COMPLETED' && p.status !== 'CANCELLED') {
+        const dueDate = new Date(p.scheduledCompletionDate);
+        const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilDue < 0) {
+          overduePoams.push({
+            id: p.id,
+            practiceId: p.practiceId,
+            practiceTitle: p.practice.title,
+            familyId: p.practice.family.id,
+            weakness: p.weakness,
+            dueDate: p.scheduledCompletionDate,
+            daysOverdue: Math.abs(daysUntilDue),
+            priority: p.priority,
+            status: p.status,
+          });
+        } else if (daysUntilDue <= 30) {
+          upcomingPoams.push({
+            id: p.id,
+            practiceId: p.practiceId,
+            practiceTitle: p.practice.title,
+            familyId: p.practice.family.id,
+            weakness: p.weakness,
+            dueDate: p.scheduledCompletionDate,
+            daysUntilDue,
+            priority: p.priority,
+            status: p.status,
+          });
+        }
+      }
+    });
+
+    // Sort overdue by most overdue first
+    overduePoams.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    upcomingPoams.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+
+    // Calculate SPRS score
+    let sprsScore = 110;
+    allPractices.forEach((p) => {
+      const status = p.assessments[0]?.status;
+      if (status !== 'IMPLEMENTED' && status !== 'NOT_APPLICABLE') {
+        sprsScore -= p.cmmcLevel === 1 ? 5 : 1;
+      }
+    });
+    sprsScore = Math.max(-203, sprsScore);
+
     const implemented = statusCounts.IMPLEMENTED + statusCounts.NOT_APPLICABLE;
-    const compliancePercentage = practices > 0 ? Math.round((implemented / practices) * 100) : 0;
+    const compliancePercentage = allPractices.length > 0 ? Math.round((implemented / allPractices.length) * 100) : 0;
 
     res.json({
-      totalPractices: practices,
+      totalPractices: allPractices.length,
       assessmentStatus: statusCounts,
       poamStatus: poamCounts,
       compliancePercentage,
+      sprsScore,
+      levelStats,
+      evidenceCoverage: {
+        withEvidence: implementedWithEvidence,
+        withoutEvidence: implementedWithoutEvidence,
+        percentage: (implementedWithEvidence + implementedWithoutEvidence) > 0
+          ? Math.round((implementedWithEvidence / (implementedWithEvidence + implementedWithoutEvidence)) * 100)
+          : 0,
+      },
+      overduePoams: overduePoams.slice(0, 10),
+      upcomingPoams: upcomingPoams.slice(0, 10),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
