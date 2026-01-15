@@ -1,3 +1,37 @@
+:root {
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f9f9f9;
+  --bg-input: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #888888;
+  --border-color: #e0e0e0;
+  --border-light: #eeeeee;
+  --sidebar-bg: #1a1a2e;
+  --sidebar-text: #cccccc;
+  --sidebar-active: #4a4a6a;
+  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2a2a2a;
+  --bg-input: #2a2a2a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
+  --border-color: #3a3a3a;
+  --border-light: #333333;
+  --sidebar-bg: #0d0d1a;
+  --sidebar-text: #b0b0b0;
+  --sidebar-active: #3a3a5a;
+  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,8 +41,9 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #f5f7fa;
-  color: #333;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* Layout */
@@ -19,12 +54,15 @@ body {
 
 .sidebar {
   width: 240px;
-  background: #1a1a2e;
+  background: var(--sidebar-bg);
   color: white;
   padding: 1.5rem;
   position: fixed;
   height: 100vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s;
 }
 
 .sidebar-header h1 {
@@ -41,6 +79,7 @@ body {
 .nav-links {
   list-style: none;
   margin-top: 2rem;
+  flex: 1;
 }
 
 .nav-links li {
@@ -50,7 +89,7 @@ body {
 .nav-links a {
   display: block;
   padding: 0.75rem 1rem;
-  color: #ccc;
+  color: var(--sidebar-text);
   text-decoration: none;
   border-radius: 6px;
   transition: all 0.2s;
@@ -62,8 +101,39 @@ body {
 }
 
 .nav-links a.active {
-  background: #4a4a6a;
+  background: var(--sidebar-active);
   color: white;
+}
+
+/* Sidebar Footer / Theme Toggle */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.theme-toggle svg {
+  flex-shrink: 0;
 }
 
 .main-content {
@@ -71,19 +141,21 @@ body {
   padding: 2rem;
   flex: 1;
   max-width: 1400px;
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s;
 }
 
 /* Typography */
 h2 {
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 h3 {
   font-size: 1.25rem;
   margin-bottom: 1rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* Dashboard */
@@ -95,10 +167,11 @@ h3 {
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
+  transition: background-color 0.3s;
 }
 
 .stat-card.primary {
@@ -108,7 +181,7 @@ h3 {
 .stat-value {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .stat-card.primary .stat-value {
@@ -120,7 +193,7 @@ h3 {
 .stat-card.danger .stat-value { color: #f44336; }
 
 .stat-label {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin-top: 0.25rem;
 }
@@ -133,18 +206,18 @@ h3 {
 }
 
 .family-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
   text-decoration: none;
-  color: inherit;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  color: var(--text-primary);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
 }
 
 .family-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .family-header {
@@ -169,7 +242,7 @@ h3 {
 }
 
 .progress-bar-container {
-  background: #e0e0e0;
+  background: var(--border-color);
   border-radius: 4px;
   height: 8px;
   overflow: hidden;
@@ -186,7 +259,7 @@ h3 {
   justify-content: space-between;
   margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .family-stats .percentage {
@@ -203,15 +276,16 @@ h3 {
 
 .filters select {
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
-  background: white;
+  background: var(--bg-input);
+  color: var(--text-primary);
   min-width: 160px;
 }
 
 .practices-count {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
 }
 
@@ -221,19 +295,19 @@ h3 {
 }
 
 .practice-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1.25rem;
   text-decoration: none;
-  color: inherit;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  color: var(--text-primary);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
   border-left: 4px solid transparent;
 }
 
 .practice-card:hover {
   transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .practice-header {
@@ -245,7 +319,7 @@ h3 {
 
 .practice-id {
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .level-badge {
@@ -271,7 +345,7 @@ h3 {
 }
 
 .practice-description {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
   display: -webkit-box;
@@ -286,12 +360,12 @@ h3 {
   align-items: center;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-light);
 }
 
 .family-tag {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .poam-indicator {
@@ -326,7 +400,7 @@ h3 {
 
 /* Practice Detail */
 .back-link {
-  color: #1a1a2e;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
@@ -338,10 +412,11 @@ h3 {
 }
 
 .practice-header-detail {
-  background: white;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  transition: background-color 0.3s;
 }
 
 .practice-meta {
@@ -354,7 +429,7 @@ h3 {
 .practice-id-large {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .practice-header-detail h2 {
@@ -362,7 +437,7 @@ h3 {
 }
 
 .family-info {
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .detail-grid {
@@ -379,15 +454,16 @@ h3 {
 }
 
 .detail-section {
-  background: white;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .detail-section h3 {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .section-header {
@@ -420,10 +496,20 @@ h3 {
 .form-group textarea {
   width: 100%;
   padding: 0.625rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
   font-family: inherit;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1565c0;
 }
 
 .form-group textarea {
@@ -513,18 +599,20 @@ h3 {
 
 /* POA&M Cards */
 .poam-form {
-  background: #f9f9f9;
+  background: var(--bg-tertiary);
   padding: 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
+  transition: background-color 0.3s;
 }
 
 .poam-card {
-  background: #f9f9f9;
+  background: var(--bg-tertiary);
   padding: 1rem;
   border-radius: 6px;
   margin-bottom: 0.75rem;
   border-left: 4px solid #1565c0;
+  transition: background-color 0.3s;
 }
 
 .poam-card.poam-completed {
@@ -550,7 +638,7 @@ h3 {
   display: flex;
   gap: 1.5rem;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* POAMs Page */
@@ -559,8 +647,9 @@ h3 {
   gap: 2rem;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .poam-stat {
@@ -570,12 +659,12 @@ h3 {
 .poam-stat .stat-number {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .poam-stat .stat-label {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .poams-list {
@@ -584,10 +673,11 @@ h3 {
 }
 
 .poam-list-card {
-  background: white;
+  background: var(--bg-secondary);
   padding: 1.25rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
+  transition: background-color 0.3s;
 }
 
 .poam-list-header {
@@ -599,7 +689,7 @@ h3 {
 
 .practice-link {
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
   text-decoration: none;
 }
 
@@ -620,14 +710,14 @@ h3 {
 }
 
 .poam-detail label {
-  color: #666;
+  color: var(--text-secondary);
   margin-right: 0.25rem;
 }
 
 .poam-milestones {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-light);
 }
 
 .poam-milestones h4 {
@@ -653,7 +743,7 @@ h3 {
   top: 0.5rem;
   width: 8px;
   height: 8px;
-  border: 2px solid #1a1a2e;
+  border: 2px solid var(--text-primary);
   border-radius: 50%;
 }
 
@@ -670,14 +760,15 @@ h3 {
 
 /* Reports Page */
 .report-section {
-  background: white;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  transition: background-color 0.3s;
 }
 
 .report-description {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -699,7 +790,7 @@ h3 {
 }
 
 .sprs-meter-bg {
-  background: #e0e0e0;
+  background: var(--border-color);
   height: 24px;
   border-radius: 12px;
   overflow: hidden;
@@ -715,7 +806,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
@@ -744,12 +835,12 @@ h3 {
 .family-report-table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .gaps-list th,
 .family-report-table th {
-  background: #f5f7fa;
+  background: var(--bg-tertiary);
   font-weight: 600;
   font-size: 0.85rem;
 }
@@ -780,7 +871,7 @@ h3 {
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .error {
@@ -790,35 +881,42 @@ h3 {
   border-radius: 6px;
 }
 
+.dark-mode .error {
+  background: #4a1f1f;
+  color: #ff8a80;
+}
+
 .empty-state {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Evidence */
 .evidence-form {
-  background: #f9f9f9;
+  background: var(--bg-tertiary);
   padding: 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
+  transition: background-color 0.3s;
 }
 
 .form-help {
   display: block;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
 
 .evidence-item {
   padding: 0.75rem 1rem;
-  background: #f5f7fa;
+  background: var(--bg-tertiary);
   border-radius: 4px;
   margin-bottom: 0.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.3s;
 }
 
 .evidence-info {
@@ -838,12 +936,12 @@ h3 {
 }
 
 .evidence-desc {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
 .evidence-meta {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
@@ -865,15 +963,16 @@ h3 {
 }
 
 .metric-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
+  transition: background-color 0.3s;
 }
 
 .metric-card h3 {
   font-size: 1rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
   text-align: center;
 }
@@ -881,7 +980,7 @@ h3 {
 .metric-subtitle {
   text-align: center;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   margin-top: 0.5rem;
 }
 
@@ -907,7 +1006,7 @@ h3 {
   width: 100%;
   height: 0;
   padding-bottom: 50%;
-  background: #e0e0e0;
+  background: var(--border-color);
   border-top-left-radius: 100% 200%;
   border-top-right-radius: 100% 200%;
   position: relative;
@@ -929,7 +1028,7 @@ h3 {
 .gauge-cover {
   width: 75%;
   height: 150%;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 50%;
   position: absolute;
   top: 25%;
@@ -939,6 +1038,7 @@ h3 {
   align-items: center;
   justify-content: center;
   padding-top: 1.5rem;
+  transition: background-color 0.3s;
 }
 
 .gauge-value {
@@ -951,7 +1051,7 @@ h3 {
   justify-content: space-between;
   width: 180px;
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-muted);
   margin-top: 0.5rem;
 }
 
@@ -973,7 +1073,7 @@ h3 {
 
 .donut-text {
   font-size: 0.5rem;
-  fill: #333;
+  fill: var(--text-primary);
   font-weight: 700;
   text-anchor: middle;
 }
@@ -1000,7 +1100,7 @@ h3 {
 
 .legend-dot.green { background: #4caf50; }
 .legend-dot.orange { background: #ff9800; }
-.legend-dot.gray { background: #e0e0e0; }
+.legend-dot.gray { background: var(--border-color); }
 
 /* Level Bars */
 .levels-card .level-bars {
@@ -1022,7 +1122,7 @@ h3 {
 
 .level-bar-track {
   height: 12px;
-  background: #e0e0e0;
+  background: var(--border-color);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1051,8 +1151,9 @@ h3 {
 .poam-status-item {
   text-align: center;
   padding: 1rem;
-  background: #f5f7fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .poam-status-value {
@@ -1068,7 +1169,7 @@ h3 {
 
 .poam-status-label {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Evidence Card */
@@ -1088,7 +1189,7 @@ h3 {
 
 .evidence-label {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .evidence-details {
@@ -1108,6 +1209,12 @@ h3 {
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  transition: background-color 0.3s;
+}
+
+.dark-mode .alert-section {
+  background: #3d2a1a;
+  border-color: #5d4a2a;
 }
 
 .alert-header {
@@ -1126,11 +1233,11 @@ h3 {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
 }
 
 .overdue-item:hover {
@@ -1146,12 +1253,12 @@ h3 {
 
 .overdue-practice {
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .overdue-weakness {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
   max-width: 400px;
   white-space: nowrap;
   overflow: hidden;
@@ -1239,10 +1346,11 @@ h3 {
 
 /* Upcoming Deadlines */
 .upcoming-section {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  transition: background-color 0.3s;
 }
 
 .upcoming-list {
@@ -1256,7 +1364,7 @@ h3 {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: #f5f7fa;
+  background: var(--bg-tertiary);
   border-radius: 6px;
   text-decoration: none;
   color: inherit;
@@ -1264,12 +1372,12 @@ h3 {
 }
 
 .upcoming-item:hover {
-  background: #e3e7ed;
+  background: var(--border-color);
 }
 
 .upcoming-practice {
   font-weight: 500;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .upcoming-meta {
@@ -1280,7 +1388,7 @@ h3 {
 
 .upcoming-days {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Print Styles */
