@@ -6,7 +6,17 @@ import PracticeDetail from './pages/PracticeDetail';
 import POAMs from './pages/POAMs';
 import Reports from './pages/Reports';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Dynamically determine API URL based on current hostname
+const getApiUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Use same hostname as the client, but port 5000
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:5000`;
+};
+
+const API_URL = getApiUrl();
 
 export { API_URL };
 
