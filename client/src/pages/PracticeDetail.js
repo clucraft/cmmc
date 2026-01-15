@@ -12,6 +12,11 @@ function PracticeDetail() {
     notes: '',
     assessedBy: '',
   });
+  const [implementation, setImplementation] = useState({
+    implementationStatement: '',
+    responsibleRole: '',
+  });
+  const [savingImplementation, setSavingImplementation] = useState(false);
   const [showPoamForm, setShowPoamForm] = useState(false);
   const [newPoam, setNewPoam] = useState({
     weakness: '',
@@ -35,6 +40,10 @@ function PracticeDetail() {
             notes: data.assessments[0].notes || '',
             assessedBy: data.assessments[0].assessedBy || '',
           });
+          setImplementation({
+            implementationStatement: data.assessments[0].implementationStatement || '',
+            responsibleRole: data.assessments[0].responsibleRole || '',
+          });
         }
         setLoading(false);
       });
@@ -49,6 +58,36 @@ function PracticeDetail() {
     });
     setSaving(false);
     alert('Assessment saved!');
+  };
+
+  const saveImplementation = async () => {
+    setSavingImplementation(true);
+    await fetch(`${API_URL}/api/assessments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...assessment,
+        implementationStatement: implementation.implementationStatement,
+        responsibleRole: implementation.responsibleRole,
+      }),
+    });
+    setSavingImplementation(false);
+    alert('Implementation statement saved!');
+  };
+
+  const loadTemplate = () => {
+    if (practice.implementationTemplate) {
+      if (implementation.implementationStatement &&
+          !window.confirm('This will replace your current implementation statement. Continue?')) {
+        return;
+      }
+      setImplementation(prev => ({
+        ...prev,
+        implementationStatement: practice.implementationTemplate
+      }));
+    } else {
+      alert('No template available for this practice.');
+    }
   };
 
   const createPoam = async (e) => {
@@ -175,6 +214,53 @@ function PracticeDetail() {
             {saving ? 'Saving...' : 'Save Assessment'}
           </button>
         </div>
+      </div>
+
+      <div className="detail-section implementation-section">
+        <div className="section-header">
+          <h3>SSP Implementation Statement</h3>
+          <button
+            onClick={loadTemplate}
+            className="btn btn-secondary btn-small"
+            title="Load the default template for this practice"
+          >
+            Load Template
+          </button>
+        </div>
+        <p className="section-description">
+          Document how your organization implements this control for the System Security Plan.
+        </p>
+
+        <div className="form-group">
+          <label>Responsible Role</label>
+          <input
+            type="text"
+            value={implementation.responsibleRole}
+            onChange={(e) => setImplementation({ ...implementation, responsibleRole: e.target.value })}
+            placeholder="e.g., System Administrator, IT Security Manager"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Implementation Statement</label>
+          <textarea
+            value={implementation.implementationStatement}
+            onChange={(e) => setImplementation({ ...implementation, implementationStatement: e.target.value })}
+            placeholder="Describe how your organization implements this control. Use the 'Load Template' button to start with a pre-written template."
+            rows={8}
+          />
+          <span className="form-help">
+            Replace bracketed placeholders (e.g., [ORGANIZATION]) with your specific information.
+          </span>
+        </div>
+
+        <button
+          onClick={saveImplementation}
+          disabled={savingImplementation}
+          className="btn btn-primary"
+        >
+          {savingImplementation ? 'Saving...' : 'Save Implementation'}
+        </button>
       </div>
 
       <div className="detail-section">

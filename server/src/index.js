@@ -291,7 +291,7 @@ app.get('/api/practices/:id', async (req, res) => {
 // ============ ASSESSMENTS ============
 app.put('/api/assessments/:practiceId', async (req, res) => {
   try {
-    const { status, notes, assessedBy } = req.body;
+    const { status, notes, assessedBy, implementationStatement, responsibleRole } = req.body;
 
     const assessment = await prisma.assessment.upsert({
       where: { practiceId: req.params.practiceId },
@@ -299,6 +299,8 @@ app.put('/api/assessments/:practiceId', async (req, res) => {
         status,
         notes,
         assessedBy,
+        implementationStatement,
+        responsibleRole,
         assessedAt: new Date(),
       },
       create: {
@@ -306,6 +308,8 @@ app.put('/api/assessments/:practiceId', async (req, res) => {
         status,
         notes,
         assessedBy,
+        implementationStatement,
+        responsibleRole,
         assessedAt: new Date(),
       },
     });
@@ -587,6 +591,432 @@ app.get('/api/reports/compliance-by-family', async (req, res) => {
 
     res.json(report);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ SYSTEM INFO ============
+app.get('/api/system-info', async (req, res) => {
+  try {
+    // Get the first (and should be only) system info record
+    let systemInfo = await prisma.systemInfo.findFirst();
+
+    // If none exists, create a default one
+    if (!systemInfo) {
+      systemInfo = await prisma.systemInfo.create({
+        data: {
+          organizationName: '',
+          systemName: 'New System',
+          versionNumber: '1.0',
+        },
+      });
+    }
+
+    res.json(systemInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info', async (req, res) => {
+  try {
+    const {
+      organizationName,
+      systemName,
+      systemDescription,
+      systemOwner,
+      securityOfficer,
+      systemBoundary,
+      networkArchitecture,
+      dataFlowDescription,
+      informationTypes,
+      preparedBy,
+      preparedDate,
+      versionNumber,
+    } = req.body;
+
+    // Get existing system info or create new
+    const existing = await prisma.systemInfo.findFirst();
+
+    let systemInfo;
+    if (existing) {
+      systemInfo = await prisma.systemInfo.update({
+        where: { id: existing.id },
+        data: {
+          organizationName,
+          systemName,
+          systemDescription,
+          systemOwner,
+          securityOfficer,
+          systemBoundary,
+          networkArchitecture,
+          dataFlowDescription,
+          informationTypes,
+          preparedBy,
+          preparedDate: preparedDate ? new Date(preparedDate) : null,
+          versionNumber,
+        },
+      });
+    } else {
+      systemInfo = await prisma.systemInfo.create({
+        data: {
+          organizationName,
+          systemName,
+          systemDescription,
+          systemOwner,
+          securityOfficer,
+          systemBoundary,
+          networkArchitecture,
+          dataFlowDescription,
+          informationTypes,
+          preparedBy,
+          preparedDate: preparedDate ? new Date(preparedDate) : null,
+          versionNumber,
+        },
+      });
+    }
+
+    res.json(systemInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ SSP GENERATION ============
+app.get('/api/ssp/preview', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+
+    const practices = await prisma.practice.findMany({
+      include: {
+        family: true,
+        assessments: true,
+        evidence: true,
+        poams: {
+          where: { status: { not: 'COMPLETED' } },
+        },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    // Calculate statistics
+    const stats = {
+      totalPractices: practices.length,
+      implemented: 0,
+      inProgress: 0,
+      notStarted: 0,
+      notApplicable: 0,
+      withStatements: 0,
+      missingStatements: 0,
+      openPoams: 0,
+      evidenceCount: 0,
+    };
+
+    const warnings = [];
+
+    practices.forEach((p) => {
+      const assessment = p.assessments[0];
+      const status = assessment?.status || 'NOT_STARTED';
+
+      if (status === 'IMPLEMENTED') stats.implemented++;
+      else if (status === 'IN_PROGRESS') stats.inProgress++;
+      else if (status === 'NOT_APPLICABLE') stats.notApplicable++;
+      else stats.notStarted++;
+
+      if (assessment?.implementationStatement) {
+        stats.withStatements++;
+      } else {
+        stats.missingStatements++;
+      }
+
+      if (p.poams.length > 0) stats.openPoams += p.poams.length;
+      stats.evidenceCount += p.evidence.length;
+    });
+
+    // Generate warnings
+    if (!systemInfo?.organizationName) {
+      warnings.push('Organization name not specified');
+    }
+    if (!systemInfo?.systemName) {
+      warnings.push('System name not specified');
+    }
+    if (!systemInfo?.systemBoundary) {
+      warnings.push('System boundary not defined');
+    }
+    if (stats.missingStatements > 0) {
+      warnings.push(`${stats.missingStatements} practices missing implementation statements`);
+    }
+    if (stats.notStarted > 0) {
+      warnings.push(`${stats.notStarted} practices not yet assessed`);
+    }
+
+    res.json({
+      systemInfo: systemInfo || {},
+      statistics: stats,
+      warnings,
+      readyForGeneration: warnings.length <= 2, // Allow generation with minor warnings
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/ssp/generate/docx', async (req, res) => {
+  try {
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel, AlignmentType } = require('docx');
+
+    // Fetch all data
+    const systemInfo = await prisma.systemInfo.findFirst();
+    const families = await prisma.controlFamily.findMany({
+      include: {
+        practices: {
+          include: {
+            assessments: true,
+            evidence: true,
+            poams: {
+              where: { status: { not: 'COMPLETED' } },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    // Build document sections
+    const children = [];
+
+    // Title
+    children.push(
+      new Paragraph({
+        text: 'System Security Plan',
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({
+        text: systemInfo?.systemName || 'System Name',
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({
+        text: `Version ${systemInfo?.versionNumber || '1.0'} | Generated ${new Date().toLocaleDateString()}`,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({ text: '' })
+    );
+
+    // System Information Section
+    children.push(
+      new Paragraph({ text: '1. System Identification', heading: HeadingLevel.HEADING_1 }),
+      new Paragraph({ text: '' })
+    );
+
+    const sysInfoRows = [
+      ['Organization Name', systemInfo?.organizationName || 'Not specified'],
+      ['System Name', systemInfo?.systemName || 'Not specified'],
+      ['System Owner', systemInfo?.systemOwner || 'Not specified'],
+      ['Security Officer', systemInfo?.securityOfficer || 'Not specified'],
+      ['Prepared By', systemInfo?.preparedBy || 'Not specified'],
+    ];
+
+    children.push(
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: sysInfoRows.map(([label, value]) =>
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 30, type: WidthType.PERCENTAGE },
+                children: [new Paragraph({ text: label, style: 'strong' })],
+              }),
+              new TableCell({
+                width: { size: 70, type: WidthType.PERCENTAGE },
+                children: [new Paragraph({ text: value })],
+              }),
+            ],
+          })
+        ),
+      }),
+      new Paragraph({ text: '' })
+    );
+
+    // System Description
+    if (systemInfo?.systemDescription) {
+      children.push(
+        new Paragraph({ text: 'System Description', heading: HeadingLevel.HEADING_2 }),
+        new Paragraph({ text: systemInfo.systemDescription }),
+        new Paragraph({ text: '' })
+      );
+    }
+
+    // System Boundary
+    if (systemInfo?.systemBoundary) {
+      children.push(
+        new Paragraph({ text: 'System Boundary', heading: HeadingLevel.HEADING_2 }),
+        new Paragraph({ text: systemInfo.systemBoundary }),
+        new Paragraph({ text: '' })
+      );
+    }
+
+    // Information Types
+    if (systemInfo?.informationTypes) {
+      children.push(
+        new Paragraph({ text: 'Information Types (CUI Categories)', heading: HeadingLevel.HEADING_2 }),
+        new Paragraph({ text: systemInfo.informationTypes }),
+        new Paragraph({ text: '' })
+      );
+    }
+
+    // Control Implementation Section
+    children.push(
+      new Paragraph({ text: '2. Security Control Implementation', heading: HeadingLevel.HEADING_1 }),
+      new Paragraph({ text: '' })
+    );
+
+    // Iterate through each family
+    for (const family of families) {
+      children.push(
+        new Paragraph({ text: `${family.id} - ${family.name}`, heading: HeadingLevel.HEADING_2 }),
+        new Paragraph({ text: family.description || '' }),
+        new Paragraph({ text: '' })
+      );
+
+      for (const practice of family.practices) {
+        const assessment = practice.assessments[0];
+        const status = assessment?.status || 'NOT_STARTED';
+        const statusText = status.replace('_', ' ');
+
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${practice.id} - ${practice.title}`, bold: true }),
+              new TextRun({ text: ` (Level ${practice.cmmcLevel})` }),
+            ],
+            heading: HeadingLevel.HEADING_3,
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Status: ', bold: true }),
+              new TextRun({ text: statusText }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Requirement: ', bold: true }),
+              new TextRun({ text: practice.description }),
+            ],
+          })
+        );
+
+        // Implementation Statement
+        const statement = assessment?.implementationStatement || practice.implementationTemplate || 'Implementation statement not provided.';
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Implementation: ', bold: true }),
+              new TextRun({ text: statement }),
+            ],
+          })
+        );
+
+        // Responsible Role
+        if (assessment?.responsibleRole) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Responsible Role: ', bold: true }),
+                new TextRun({ text: assessment.responsibleRole }),
+              ],
+            })
+          );
+        }
+
+        // Evidence
+        if (practice.evidence.length > 0) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Evidence: ', bold: true }),
+                new TextRun({ text: practice.evidence.map((e) => e.name).join(', ') }),
+              ],
+            })
+          );
+        }
+
+        // POA&M reference
+        if (practice.poams.length > 0) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'POA&M: ', bold: true }),
+                new TextRun({ text: `${practice.poams.length} open item(s)` }),
+              ],
+            })
+          );
+        }
+
+        children.push(new Paragraph({ text: '' }));
+      }
+    }
+
+    // POA&M Summary Section
+    const allPoams = families.flatMap((f) => f.practices.flatMap((p) => p.poams.map((poam) => ({ ...poam, practiceId: p.id, practiceTitle: p.title }))));
+
+    if (allPoams.length > 0) {
+      children.push(
+        new Paragraph({ text: '3. Plan of Action and Milestones (POA&M) Summary', heading: HeadingLevel.HEADING_1 }),
+        new Paragraph({ text: '' })
+      );
+
+      const poamTable = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: ['Practice', 'Weakness', 'Status', 'Priority', 'Due Date'].map(
+              (text) =>
+                new TableCell({
+                  children: [new Paragraph({ text, style: 'strong' })],
+                })
+            ),
+          }),
+          ...allPoams.slice(0, 20).map(
+            (poam) =>
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: poam.practiceId })] }),
+                  new TableCell({ children: [new Paragraph({ text: poam.weakness?.substring(0, 50) + '...' || '' })] }),
+                  new TableCell({ children: [new Paragraph({ text: poam.status })] }),
+                  new TableCell({ children: [new Paragraph({ text: poam.priority })] }),
+                  new TableCell({ children: [new Paragraph({ text: poam.scheduledCompletionDate ? new Date(poam.scheduledCompletionDate).toLocaleDateString() : 'N/A' })] }),
+                ],
+              })
+          ),
+        ],
+      });
+
+      children.push(poamTable);
+    }
+
+    // Create document
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children,
+        },
+      ],
+    });
+
+    // Generate buffer
+    const buffer = await Packer.toBuffer(doc);
+
+    // Set headers and send
+    const filename = `SSP-${(systemInfo?.systemName || 'System').replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('SSP Generation Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

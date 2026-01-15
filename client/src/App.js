@@ -5,6 +5,7 @@ import Practices from './pages/Practices';
 import PracticeDetail from './pages/PracticeDetail';
 import POAMs from './pages/POAMs';
 import Reports from './pages/Reports';
+import SystemInfo from './pages/SystemInfo';
 
 // Dynamically determine API URL based on current hostname
 const getApiUrl = () => {
@@ -56,6 +57,9 @@ function App() {
             <li>
               <NavLink to="/reports">Reports</NavLink>
             </li>
+            <li>
+              <NavLink to="/system-info">System Info</NavLink>
+            </li>
           </ul>
           <div className="sidebar-footer">
             <button
@@ -83,6 +87,7 @@ function App() {
             <Route path="/practices/:id" element={<PracticeDetail />} />
             <Route path="/poams" element={<POAMs />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/system-info" element={<SystemInfo />} />
           </Routes>
         </main>
       </div>

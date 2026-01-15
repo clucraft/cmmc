@@ -17,32 +17,35 @@ model ControlFamily {
 
 // Individual practices/controls from NIST 800-171
 model Practice {
-  id              String    @id // e.g., "3.1.1"
-  familyId        String
-  family          ControlFamily @relation(fields: [familyId], references: [id])
-  title           String
-  description     String
-  discussion      String?
-  cmmcLevel       Int       // 1 or 2
-  nistControls    String?   // Related NIST SP 800-53 controls
-  assessments     Assessment[]
-  poams           POAM[]
-  evidence        Evidence[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                      String    @id // e.g., "3.1.1"
+  familyId                String
+  family                  ControlFamily @relation(fields: [familyId], references: [id])
+  title                   String
+  description             String
+  discussion              String?
+  cmmcLevel               Int       // 1 or 2
+  nistControls            String?   // Related NIST SP 800-53 controls
+  implementationTemplate  String?   // Default template for SSP implementation statement
+  assessments             Assessment[]
+  poams                   POAM[]
+  evidence                Evidence[]
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 }
 
 // Assessment status for each practice
 model Assessment {
-  id            String   @id @default(uuid())
-  practiceId    String
-  practice      Practice @relation(fields: [practiceId], references: [id])
-  status        AssessmentStatus @default(NOT_STARTED)
-  notes         String?
-  assessedBy    String?
-  assessedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  practiceId              String
+  practice                Practice @relation(fields: [practiceId], references: [id])
+  status                  AssessmentStatus @default(NOT_STARTED)
+  notes                   String?
+  implementationStatement String?  // User-customized SSP implementation statement
+  responsibleRole         String?  // Role/person responsible for this control
+  assessedBy              String?
+  assessedAt              DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@unique([practiceId])
 }
@@ -116,6 +119,7 @@ model Evidence {
 // System Security Plan metadata
 model SystemInfo {
   id                    String   @id @default(uuid())
+  organizationName      String?
   systemName            String
   systemDescription     String?
   systemOwner           String?
@@ -123,6 +127,10 @@ model SystemInfo {
   systemBoundary        String?
   networkArchitecture   String?
   dataFlowDescription   String?
+  informationTypes      String?  // Types of CUI handled
+  preparedBy            String?
+  preparedDate          DateTime?
+  versionNumber         String?  @default("1.0")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
