@@ -707,7 +707,7 @@ app.get('/api/ssp/preview', async (req, res) => {
       notStarted: 0,
       notApplicable: 0,
       withStatements: 0,
-      missingStatements: 0,
+      withoutStatements: 0,
       openPoams: 0,
       evidenceCount: 0,
     };
@@ -726,7 +726,7 @@ app.get('/api/ssp/preview', async (req, res) => {
       if (assessment?.implementationStatement) {
         stats.withStatements++;
       } else {
-        stats.missingStatements++;
+        stats.withoutStatements++;
       }
 
       if (p.poams.length > 0) stats.openPoams += p.poams.length;
@@ -743,8 +743,8 @@ app.get('/api/ssp/preview', async (req, res) => {
     if (!systemInfo?.systemBoundary) {
       warnings.push('System boundary not defined');
     }
-    if (stats.missingStatements > 0) {
-      warnings.push(`${stats.missingStatements} practices missing implementation statements`);
+    if (stats.withoutStatements > 0) {
+      warnings.push(`${stats.withoutStatements} practices missing implementation statements`);
     }
     if (stats.notStarted > 0) {
       warnings.push(`${stats.notStarted} practices not yet assessed`);
@@ -752,7 +752,7 @@ app.get('/api/ssp/preview', async (req, res) => {
 
     res.json({
       systemInfo: systemInfo || {},
-      statistics: stats,
+      stats,
       warnings,
       readyForGeneration: warnings.length <= 2, // Allow generation with minor warnings
     });
