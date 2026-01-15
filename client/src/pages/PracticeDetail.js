@@ -19,6 +19,10 @@ function PracticeDetail() {
     scheduledCompletionDate: '',
     priority: 'MEDIUM',
   });
+  const [showEvidenceForm, setShowEvidenceForm] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState(null);
+  const [evidenceDescription, setEvidenceDescription] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/api/practices/${id}`)
@@ -58,6 +62,47 @@ function PracticeDetail() {
     // Refresh practice data
     const updated = await fetch(`${API_URL}/api/practices/${id}`).then(r => r.json());
     setPractice(updated);
+  };
+
+  const uploadEvidence = async (e) => {
+    e.preventDefault();
+    if (!evidenceFile) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', evidenceFile);
+    formData.append('description', evidenceDescription);
+
+    try {
+      await fetch(`${API_URL}/api/practices/${id}/evidence`, {
+        method: 'POST',
+        body: formData,
+      });
+      setShowEvidenceForm(false);
+      setEvidenceFile(null);
+      setEvidenceDescription('');
+      // Refresh practice data
+      const updated = await fetch(`${API_URL}/api/practices/${id}`).then(r => r.json());
+      setPractice(updated);
+    } catch (error) {
+      alert('Failed to upload evidence');
+    }
+    setUploading(false);
+  };
+
+  const deleteEvidence = async (evidenceId) => {
+    if (!window.confirm('Are you sure you want to delete this evidence?')) return;
+
+    try {
+      await fetch(`${API_URL}/api/evidence/${evidenceId}`, {
+        method: 'DELETE',
+      });
+      // Refresh practice data
+      const updated = await fetch(`${API_URL}/api/practices/${id}`).then(r => r.json());
+      setPractice(updated);
+    } catch (error) {
+      alert('Failed to delete evidence');
+    }
   };
 
   if (loading) return <div className="loading">Loading practice...</div>;
@@ -206,14 +251,73 @@ function PracticeDetail() {
       </div>
 
       <div className="detail-section">
-        <h3>Evidence ({practice.evidence?.length || 0})</h3>
-        {practice.evidence?.length === 0 && (
+        <div className="section-header">
+          <h3>Evidence ({practice.evidence?.length || 0})</h3>
+          <button onClick={() => setShowEvidenceForm(true)} className="btn btn-secondary">
+            + Upload Evidence
+          </button>
+        </div>
+
+        {showEvidenceForm && (
+          <form onSubmit={uploadEvidence} className="evidence-form">
+            <div className="form-group">
+              <label>File *</label>
+              <input
+                type="file"
+                onChange={(e) => setEvidenceFile(e.target.files[0])}
+                required
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt,.csv,.zip"
+              />
+              <small className="form-help">
+                Allowed: PDF, Word, Excel, Images, Text, CSV, ZIP (max 50MB)
+              </small>
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <input
+                type="text"
+                value={evidenceDescription}
+                onChange={(e) => setEvidenceDescription(e.target.value)}
+                placeholder="Brief description of this evidence"
+              />
+            </div>
+            <div className="form-actions">
+              <button type="submit" disabled={uploading} className="btn btn-primary">
+                {uploading ? 'Uploading...' : 'Upload'}
+              </button>
+              <button type="button" onClick={() => setShowEvidenceForm(false)} className="btn">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {practice.evidence?.length === 0 && !showEvidenceForm && (
           <p className="empty-state">No evidence uploaded yet.</p>
         )}
+
         {practice.evidence?.map(ev => (
           <div key={ev.id} className="evidence-item">
-            <span>{ev.name}</span>
-            {ev.description && <span className="evidence-desc">{ev.description}</span>}
+            <div className="evidence-info">
+              <a
+                href={`${API_URL}/api/evidence/${ev.id}/download`}
+                className="evidence-name"
+                download
+              >
+                {ev.name}
+              </a>
+              {ev.description && <span className="evidence-desc">{ev.description}</span>}
+              <span className="evidence-meta">
+                {ev.fileType?.toUpperCase()} • {new Date(ev.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+            <button
+              onClick={() => deleteEvidence(ev.id)}
+              className="btn btn-small btn-danger"
+              title="Delete evidence"
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>

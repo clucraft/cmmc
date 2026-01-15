@@ -797,18 +797,63 @@ h3 {
 }
 
 /* Evidence */
+.evidence-form {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.form-help {
+  display: block;
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
 .evidence-item {
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   background: #f5f7fa;
   border-radius: 4px;
   margin-bottom: 0.5rem;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.evidence-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.evidence-name {
+  font-weight: 500;
+  color: #1565c0;
+  text-decoration: none;
+}
+
+.evidence-name:hover {
+  text-decoration: underline;
 }
 
 .evidence-desc {
   color: #666;
   font-size: 0.85rem;
+}
+
+.evidence-meta {
+  color: #999;
+  font-size: 0.75rem;
+}
+
+.btn-danger {
+  background: #f44336;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #d32f2f;
 }
 
 /* Print Styles */

@@ -27,6 +27,8 @@ services:
       - NODE_ENV=production
       - PORT=5000
       - DATABASE_URL=postgresql://cmmc:cmmc_dev_password@db:5432/cmmc
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +50,4 @@ networks:
 
 volumes:
   postgres_data:
+  uploads_data:

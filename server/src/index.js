@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
@@ -7,9 +10,42 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    // Allow common document types
+    const allowedTypes = /pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif|txt|csv|zip/;
+    const ext = path.extname(file.originalname).toLowerCase().slice(1);
+    if (allowedTypes.test(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -320,18 +356,23 @@ app.put('/api/milestones/:id', async (req, res) => {
 });
 
 // ============ EVIDENCE ============
-app.post('/api/practices/:practiceId/evidence', async (req, res) => {
+app.post('/api/practices/:practiceId/evidence', upload.single('file'), async (req, res) => {
   try {
-    const { name, description, fileType, filePath, uploadedBy } = req.body;
+    const { description, uploadedBy } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
     const evidence = await prisma.evidence.create({
       data: {
         practiceId: req.params.practiceId,
-        name,
-        description,
-        fileType,
-        filePath,
-        uploadedBy,
+        name: file.originalname,
+        description: description || null,
+        fileType: path.extname(file.originalname).slice(1).toLowerCase(),
+        filePath: `/uploads/${file.filename}`,
+        uploadedBy: uploadedBy || null,
       },
     });
 
@@ -341,11 +382,40 @@ app.post('/api/practices/:practiceId/evidence', async (req, res) => {
   }
 });
 
+app.get('/api/evidence/:id/download', async (req, res) => {
+  try {
+    const evidence = await prisma.evidence.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!evidence || !evidence.filePath) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const filePath = path.join(__dirname, '..', evidence.filePath);
+    res.download(filePath, evidence.name);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.delete('/api/evidence/:id', async (req, res) => {
   try {
+    const evidence = await prisma.evidence.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (evidence && evidence.filePath) {
+      const filePath = path.join(__dirname, '..', evidence.filePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
     await prisma.evidence.delete({
       where: { id: req.params.id },
     });
+
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
