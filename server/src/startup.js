@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 
 async function waitForDatabase(maxAttempts = 30) {
   console.log('Waiting for database connection...');
+  console.log('DATABASE_URL:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':***@') || 'NOT SET');
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -12,7 +13,7 @@ async function waitForDatabase(maxAttempts = 30) {
       console.log('Database connected!');
       return true;
     } catch (error) {
-      console.log(`Attempt ${attempt}/${maxAttempts}: Database not ready, waiting...`);
+      console.log(`Attempt ${attempt}/${maxAttempts}: ${error.message}`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }

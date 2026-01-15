@@ -11,6 +11,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cmmc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cmmc -d cmmc"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   server:
     image: ghcr.io/clucraft/cmmc/server:latest
@@ -21,16 +28,23 @@ services:
       - PORT=5000
       - DATABASE_URL=postgresql://cmmc:cmmc_dev_password@db:5432/cmmc
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - cmmc-network
 
   client:
     image: ghcr.io/clucraft/cmmc/client:latest
     ports:
       - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=http://localhost:5000
     depends_on:
       - server
+    networks:
+      - cmmc-network
+
+networks:
+  cmmc-network:
+    driver: bridge
 
 volumes:
   postgres_data:
