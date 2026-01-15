@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: cmmc
+      POSTGRES_PASSWORD: cmmc_dev_password
+      POSTGRES_DB: cmmc
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   server:
     build: ./server
     ports:
@@ -8,9 +19,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
+      - DATABASE_URL=postgresql://cmmc:cmmc_dev_password@db:5432/cmmc
     volumes:
       - ./server:/app
       - /app/node_modules
+    depends_on:
+      - db
 
   client:
     build: ./client
@@ -23,3 +37,6 @@ services:
       - /app/node_modules
     depends_on:
       - server
+
+volumes:
+  postgres_data:

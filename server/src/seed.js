@@ -1,0 +1,440 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+const controlFamilies = [
+  { id: 'AC', name: 'Access Control', description: 'Limit system access to authorized users, processes, and devices.' },
+  { id: 'AT', name: 'Awareness and Training', description: 'Ensure personnel are aware of security risks and trained in policies.' },
+  { id: 'AU', name: 'Audit and Accountability', description: 'Create, protect, and retain audit records.' },
+  { id: 'CM', name: 'Configuration Management', description: 'Establish and maintain baseline configurations.' },
+  { id: 'IA', name: 'Identification and Authentication', description: 'Identify and authenticate users, processes, and devices.' },
+  { id: 'IR', name: 'Incident Response', description: 'Establish incident handling capabilities.' },
+  { id: 'MA', name: 'Maintenance', description: 'Perform maintenance on organizational systems.' },
+  { id: 'MP', name: 'Media Protection', description: 'Protect system media containing CUI.' },
+  { id: 'PS', name: 'Personnel Security', description: 'Screen individuals and protect CUI during personnel actions.' },
+  { id: 'PE', name: 'Physical Protection', description: 'Limit physical access to systems and facilities.' },
+  { id: 'RA', name: 'Risk Assessment', description: 'Assess organizational risk.' },
+  { id: 'CA', name: 'Security Assessment', description: 'Assess security controls and monitor continuously.' },
+  { id: 'SC', name: 'System and Communications Protection', description: 'Monitor and protect communications.' },
+  { id: 'SI', name: 'System and Information Integrity', description: 'Identify and correct system flaws.' },
+];
+
+// NIST 800-171 Rev 2 Practices - All 110 controls
+// Level 1 practices are marked with cmmcLevel: 1
+const practices = [
+  // ACCESS CONTROL (AC) - 22 practices
+  { id: '3.1.1', familyId: 'AC', title: 'Authorized Access Control', cmmcLevel: 1,
+    description: 'Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).',
+    discussion: 'Access control policies control access between active entities or subjects and passive entities or objects in systems.' },
+  { id: '3.1.2', familyId: 'AC', title: 'Transaction & Function Control', cmmcLevel: 1,
+    description: 'Limit system access to the types of transactions and functions that authorized users are permitted to execute.',
+    discussion: 'Organizations may choose to define access privileges or other attributes by account, by type of account, or a combination of both.' },
+  { id: '3.1.3', familyId: 'AC', title: 'CUI Flow Control', cmmcLevel: 2,
+    description: 'Control the flow of CUI in accordance with approved authorizations.',
+    discussion: 'Information flow control regulates where information can travel within a system and between systems.' },
+  { id: '3.1.4', familyId: 'AC', title: 'Separation of Duties', cmmcLevel: 2,
+    description: 'Separate the duties of individuals to reduce the risk of malevolent activity without collusion.',
+    discussion: 'Separation of duties addresses the potential for abuse of authorized privileges.' },
+  { id: '3.1.5', familyId: 'AC', title: 'Least Privilege', cmmcLevel: 2,
+    description: 'Employ the principle of least privilege, including for specific security functions and privileged accounts.',
+    discussion: 'Organizations employ least privilege for specific duties and systems.' },
+  { id: '3.1.6', familyId: 'AC', title: 'Non-Privileged Account Use', cmmcLevel: 2,
+    description: 'Use non-privileged accounts or roles when accessing nonsecurity functions.',
+    discussion: 'Limiting the use of privileged accounts reduces exposure when operating from within privileged accounts.' },
+  { id: '3.1.7', familyId: 'AC', title: 'Privileged Function Control', cmmcLevel: 2,
+    description: 'Prevent non-privileged users from executing privileged functions and capture the execution of such functions in audit logs.',
+    discussion: 'Privileged functions include establishing system accounts, performing system integrity checks, or administering cryptographic key management.' },
+  { id: '3.1.8', familyId: 'AC', title: 'Unsuccessful Logon Attempts', cmmcLevel: 2,
+    description: 'Limit unsuccessful logon attempts.',
+    discussion: 'Organizations can define thresholds for unsuccessful login attempts.' },
+  { id: '3.1.9', familyId: 'AC', title: 'Privacy & Security Notices', cmmcLevel: 2,
+    description: 'Provide privacy and security notices consistent with applicable CUI rules.',
+    discussion: 'System use notifications can be implemented using messages or warning banners displayed before individuals log in.' },
+  { id: '3.1.10', familyId: 'AC', title: 'Session Lock', cmmcLevel: 2,
+    description: 'Use session lock with pattern-hiding displays to prevent access and viewing of data after a period of inactivity.',
+    discussion: 'Session locks are temporary actions taken when users stop work and move away from their systems.' },
+  { id: '3.1.11', familyId: 'AC', title: 'Session Termination', cmmcLevel: 2,
+    description: 'Terminate (automatically) a user session after a defined condition.',
+    discussion: 'This requirement addresses the termination of user-initiated logical sessions.' },
+  { id: '3.1.12', familyId: 'AC', title: 'Remote Access Control', cmmcLevel: 2,
+    description: 'Monitor and control remote access sessions.',
+    discussion: 'Remote access is access to systems by users communicating through external networks.' },
+  { id: '3.1.13', familyId: 'AC', title: 'Remote Access Cryptography', cmmcLevel: 2,
+    description: 'Employ cryptographic mechanisms to protect the confidentiality of remote access sessions.',
+    discussion: 'Cryptographic standards include FIPS-validated cryptography.' },
+  { id: '3.1.14', familyId: 'AC', title: 'Remote Access Routing', cmmcLevel: 2,
+    description: 'Route remote access via managed access control points.',
+    discussion: 'Routing remote access through managed access control points enhances explicit control over such connections.' },
+  { id: '3.1.15', familyId: 'AC', title: 'Privileged Remote Access', cmmcLevel: 2,
+    description: 'Authorize remote execution of privileged commands and remote access to security-relevant information.',
+    discussion: 'A privileged command is a human-initiated command executed on a system with elevated privileges.' },
+  { id: '3.1.16', familyId: 'AC', title: 'Wireless Access Authorization', cmmcLevel: 2,
+    description: 'Authorize wireless access prior to allowing such connections.',
+    discussion: 'Establishing usage restrictions and configuration requirements for wireless access.' },
+  { id: '3.1.17', familyId: 'AC', title: 'Wireless Access Protection', cmmcLevel: 2,
+    description: 'Protect wireless access using authentication and encryption.',
+    discussion: 'Organizations authenticate individuals and devices to help protect wireless access.' },
+  { id: '3.1.18', familyId: 'AC', title: 'Mobile Device Control', cmmcLevel: 2,
+    description: 'Control connection of mobile devices.',
+    discussion: 'A mobile device is a computing device that has a small form factor.' },
+  { id: '3.1.19', familyId: 'AC', title: 'CUI on External Systems', cmmcLevel: 2,
+    description: 'Encrypt CUI on mobile devices and mobile computing platforms.',
+    discussion: 'Organizations can employ full-device encryption or container encryption.' },
+  { id: '3.1.20', familyId: 'AC', title: 'External System Connections', cmmcLevel: 1,
+    description: 'Verify and control/limit connections to and use of external systems.',
+    discussion: 'External systems are systems or components of systems outside of the organization boundary.' },
+  { id: '3.1.21', familyId: 'AC', title: 'Portable Storage Use', cmmcLevel: 2,
+    description: 'Limit use of portable storage devices on external systems.',
+    discussion: 'Portable storage devices include USB memory sticks, external hard drives.' },
+  { id: '3.1.22', familyId: 'AC', title: 'Publicly Accessible Content', cmmcLevel: 1,
+    description: 'Control information posted or processed on publicly accessible systems.',
+    discussion: 'Publicly accessible systems include public websites, social media.' },
+
+  // AWARENESS AND TRAINING (AT) - 3 practices
+  { id: '3.2.1', familyId: 'AT', title: 'Security Awareness', cmmcLevel: 2,
+    description: 'Ensure that managers, systems administrators, and users of organizational systems are made aware of the security risks associated with their activities and of the applicable policies, standards, and procedures related to the security of those systems.',
+    discussion: 'Organizations determine the content and frequency of security awareness.' },
+  { id: '3.2.2', familyId: 'AT', title: 'Role-Based Training', cmmcLevel: 2,
+    description: 'Ensure that personnel are trained to carry out their assigned information security-related duties and responsibilities.',
+    discussion: 'Organizations provide role-based security training.' },
+  { id: '3.2.3', familyId: 'AT', title: 'Insider Threat Awareness', cmmcLevel: 2,
+    description: 'Provide security awareness training on recognizing and reporting potential indicators of insider threat.',
+    discussion: 'Insider threat awareness training can be integrated into organizational training.' },
+
+  // AUDIT AND ACCOUNTABILITY (AU) - 9 practices
+  { id: '3.3.1', familyId: 'AU', title: 'System Auditing', cmmcLevel: 2,
+    description: 'Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.',
+    discussion: 'Audit records can be generated at various levels of abstraction.' },
+  { id: '3.3.2', familyId: 'AU', title: 'User Accountability', cmmcLevel: 2,
+    description: 'Ensure that the actions of individual system users can be uniquely traced to those users so they can be held accountable for their actions.',
+    discussion: 'This requirement ensures that the contents of the audit record include the information needed.' },
+  { id: '3.3.3', familyId: 'AU', title: 'Event Review', cmmcLevel: 2,
+    description: 'Review and update logged events.',
+    discussion: 'The intent is to periodically re-evaluate which logged events will continue to be necessary.' },
+  { id: '3.3.4', familyId: 'AU', title: 'Audit Failure Alerting', cmmcLevel: 2,
+    description: 'Alert in the event of an audit logging process failure.',
+    discussion: 'Audit logging process failures include software and hardware errors.' },
+  { id: '3.3.5', familyId: 'AU', title: 'Audit Correlation', cmmcLevel: 2,
+    description: 'Correlate audit record review, analysis, and reporting processes for investigation and response to indications of unlawful, unauthorized, suspicious, or unusual activity.',
+    discussion: 'Correlating audit record information with vulnerability scanning information.' },
+  { id: '3.3.6', familyId: 'AU', title: 'Audit Reduction', cmmcLevel: 2,
+    description: 'Provide audit record reduction and report generation to support on-demand analysis and reporting.',
+    discussion: 'Audit record reduction is a process that manipulates collected audit information.' },
+  { id: '3.3.7', familyId: 'AU', title: 'Authoritative Time Source', cmmcLevel: 2,
+    description: 'Provide a system capability that compares and synchronizes internal system clocks with an authoritative source to generate time stamps for audit records.',
+    discussion: 'Internal system clocks are used to generate time stamps.' },
+  { id: '3.3.8', familyId: 'AU', title: 'Audit Protection', cmmcLevel: 2,
+    description: 'Protect audit information and audit logging tools from unauthorized access, modification, and deletion.',
+    discussion: 'Audit information includes all information needed to successfully audit system activity.' },
+  { id: '3.3.9', familyId: 'AU', title: 'Audit Management', cmmcLevel: 2,
+    description: 'Limit management of audit logging functionality to a subset of privileged users.',
+    discussion: 'Individuals with privileged access to a system and who are also the subject of an audit have the potential to compromise audit information.' },
+
+  // CONFIGURATION MANAGEMENT (CM) - 9 practices
+  { id: '3.4.1', familyId: 'CM', title: 'Baseline Configuration', cmmcLevel: 2,
+    description: 'Establish and maintain baseline configurations and inventories of organizational systems (including hardware, software, firmware, and documentation) throughout the respective system development life cycles.',
+    discussion: 'Baseline configurations are documented, formally reviewed and agreed-upon specifications.' },
+  { id: '3.4.2', familyId: 'CM', title: 'Security Configuration Settings', cmmcLevel: 2,
+    description: 'Establish and enforce security configuration settings for information technology products employed in organizational systems.',
+    discussion: 'Configuration settings are the set of parameters that can be changed in hardware, software, or firmware.' },
+  { id: '3.4.3', familyId: 'CM', title: 'System Change Tracking', cmmcLevel: 2,
+    description: 'Track, review, approve or disapprove, and log changes to organizational systems.',
+    discussion: 'Tracking, reviewing, approving, disapproving, and logging changes is called configuration change control.' },
+  { id: '3.4.4', familyId: 'CM', title: 'Security Impact Analysis', cmmcLevel: 2,
+    description: 'Analyze the security impact of changes prior to implementation.',
+    discussion: 'Organizational personnel with security responsibilities conduct security impact analyses.' },
+  { id: '3.4.5', familyId: 'CM', title: 'Access Restrictions for Change', cmmcLevel: 2,
+    description: 'Define, document, approve, and enforce physical and logical access restrictions associated with changes to organizational systems.',
+    discussion: 'Any changes to the hardware, software, or firmware components of systems can have effects on security.' },
+  { id: '3.4.6', familyId: 'CM', title: 'Least Functionality', cmmcLevel: 2,
+    description: 'Employ the principle of least functionality by configuring organizational systems to provide only essential capabilities.',
+    discussion: 'Systems can provide a wide variety of functions and services.' },
+  { id: '3.4.7', familyId: 'CM', title: 'Nonessential Functionality', cmmcLevel: 2,
+    description: 'Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services.',
+    discussion: 'Restricting the use of nonessential software (programs) includes restricting the roles allowed to approve program execution.' },
+  { id: '3.4.8', familyId: 'CM', title: 'Application Execution Policy', cmmcLevel: 2,
+    description: 'Apply deny-by-exception (blacklisting) policy to prevent the use of unauthorized software or deny-all, permit-by-exception (whitelisting) policy to allow the execution of authorized software.',
+    discussion: 'Blacklisting is a form of exception-based enforcement.' },
+  { id: '3.4.9', familyId: 'CM', title: 'User-Installed Software', cmmcLevel: 2,
+    description: 'Control and monitor user-installed software.',
+    discussion: 'Users can install software that is harmful to systems.' },
+
+  // IDENTIFICATION AND AUTHENTICATION (IA) - 11 practices
+  { id: '3.5.1', familyId: 'IA', title: 'User Identification', cmmcLevel: 1,
+    description: 'Identify system users, processes acting on behalf of users, and devices.',
+    discussion: 'Common device identifiers include MAC addresses, IP addresses.' },
+  { id: '3.5.2', familyId: 'IA', title: 'User Authentication', cmmcLevel: 1,
+    description: 'Authenticate (or verify) the identities of users, processes, or devices, as a prerequisite to allowing access to organizational systems.',
+    discussion: 'Individual authenticators include passwords, key cards, cryptographic devices.' },
+  { id: '3.5.3', familyId: 'IA', title: 'Multi-Factor Authentication', cmmcLevel: 2,
+    description: 'Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.',
+    discussion: 'Multifactor authentication requires the use of two or more different factors to achieve authentication.' },
+  { id: '3.5.4', familyId: 'IA', title: 'Replay-Resistant Authentication', cmmcLevel: 2,
+    description: 'Employ replay-resistant authentication mechanisms for network access to privileged and non-privileged accounts.',
+    discussion: 'Authentication processes resist replay attacks if it is impractical to successfully authenticate by recording or replaying authentication messages.' },
+  { id: '3.5.5', familyId: 'IA', title: 'Identifier Reuse Prevention', cmmcLevel: 2,
+    description: 'Prevent reuse of identifiers for a defined period.',
+    discussion: 'Identifiers are provided for users, processes acting on behalf of users, or devices.' },
+  { id: '3.5.6', familyId: 'IA', title: 'Identifier Disabling', cmmcLevel: 2,
+    description: 'Disable identifiers after a defined period of inactivity.',
+    discussion: 'Inactive identifiers pose a risk to organizational operations.' },
+  { id: '3.5.7', familyId: 'IA', title: 'Password Complexity', cmmcLevel: 2,
+    description: 'Enforce a minimum password complexity and change of characters when new passwords are created.',
+    discussion: 'This requirement applies to single-factor authentication of individuals using passwords.' },
+  { id: '3.5.8', familyId: 'IA', title: 'Password Reuse Prohibition', cmmcLevel: 2,
+    description: 'Prohibit password reuse for a specified number of generations.',
+    discussion: 'Password lifetime restrictions do not apply to temporary passwords.' },
+  { id: '3.5.9', familyId: 'IA', title: 'Temporary Password Change', cmmcLevel: 2,
+    description: 'Allow temporary password use for system logons with an immediate change to a permanent password.',
+    discussion: 'Changing temporary passwords to permanent passwords immediately after system logon ensures that the necessary strength of the authentication mechanism is implemented at the earliest opportunity.' },
+  { id: '3.5.10', familyId: 'IA', title: 'Cryptographic Password Protection', cmmcLevel: 2,
+    description: 'Store and transmit only cryptographically-protected passwords.',
+    discussion: 'Cryptographically-protected passwords use salted one-way cryptographic hashes of passwords.' },
+  { id: '3.5.11', familyId: 'IA', title: 'Obscure Authentication Feedback', cmmcLevel: 2,
+    description: 'Obscure feedback of authentication information.',
+    discussion: 'The feedback from systems does not provide information that would allow unauthorized users to compromise authentication mechanisms.' },
+
+  // INCIDENT RESPONSE (IR) - 6 practices
+  { id: '3.6.1', familyId: 'IR', title: 'Incident Handling', cmmcLevel: 2,
+    description: 'Establish an operational incident-handling capability for organizational systems that includes preparation, detection, analysis, containment, recovery, and user response activities.',
+    discussion: 'Organizations recognize that incident handling capability is dependent on the capabilities of organizational systems.' },
+  { id: '3.6.2', familyId: 'IR', title: 'Incident Tracking', cmmcLevel: 2,
+    description: 'Track, document, and report incidents to designated officials and/or authorities both internal and external to the organization.',
+    discussion: 'Tracking and documenting system security incidents on an ongoing basis is critical for managing incidents.' },
+  { id: '3.6.3', familyId: 'IR', title: 'Incident Response Testing', cmmcLevel: 2,
+    description: 'Test the organizational incident response capability.',
+    discussion: 'Organizations test incident response capabilities to determine the effectiveness of the capabilities.' },
+
+  // MAINTENANCE (MA) - 6 practices
+  { id: '3.7.1', familyId: 'MA', title: 'System Maintenance', cmmcLevel: 2,
+    description: 'Perform maintenance on organizational systems.',
+    discussion: 'This requirement addresses the information security aspects of the system maintenance program.' },
+  { id: '3.7.2', familyId: 'MA', title: 'Maintenance Control', cmmcLevel: 2,
+    description: 'Provide controls on the tools, techniques, mechanisms, and personnel used to conduct system maintenance.',
+    discussion: 'This requirement addresses security-related issues with maintenance tools.' },
+  { id: '3.7.3', familyId: 'MA', title: 'Offsite Maintenance', cmmcLevel: 2,
+    description: 'Ensure equipment removed for off-site maintenance is sanitized of any CUI.',
+    discussion: 'This requirement addresses the information security aspects of system maintenance that is performed off-site.' },
+  { id: '3.7.4', familyId: 'MA', title: 'Media Sanitization', cmmcLevel: 2,
+    description: 'Check media containing diagnostic and test programs for malicious code before the media are used in organizational systems.',
+    discussion: 'If, upon inspection of media containing maintenance diagnostic and test programs, organizations determine that the media contain malicious code, the incident is handled consistent with organizational incident handling policies and procedures.' },
+  { id: '3.7.5', familyId: 'MA', title: 'Nonlocal Maintenance', cmmcLevel: 2,
+    description: 'Require multifactor authentication to establish nonlocal maintenance sessions via external network connections and terminate such connections when nonlocal maintenance is complete.',
+    discussion: 'Nonlocal maintenance and diagnostic activities are conducted by individuals communicating through an external network.' },
+  { id: '3.7.6', familyId: 'MA', title: 'Maintenance Personnel', cmmcLevel: 2,
+    description: 'Supervise the maintenance activities of maintenance personnel without required access authorization.',
+    discussion: 'This requirement applies to individuals who are performing hardware or software maintenance on organizational systems.' },
+
+  // MEDIA PROTECTION (MP) - 9 practices
+  { id: '3.8.1', familyId: 'MP', title: 'Media Protection', cmmcLevel: 1,
+    description: 'Protect (i.e., physically control and securely store) system media containing CUI, both paper and digital.',
+    discussion: 'System media includes digital and non-digital media.' },
+  { id: '3.8.2', familyId: 'MP', title: 'Media Access', cmmcLevel: 2,
+    description: 'Limit access to CUI on system media to authorized users.',
+    discussion: 'Access can be limited by physically controlling system media.' },
+  { id: '3.8.3', familyId: 'MP', title: 'Media Sanitization', cmmcLevel: 1,
+    description: 'Sanitize or destroy system media containing CUI before disposal or release for reuse.',
+    discussion: 'This requirement applies to all system media, digital and non-digital.' },
+  { id: '3.8.4', familyId: 'MP', title: 'Media Marking', cmmcLevel: 2,
+    description: 'Mark media with necessary CUI markings and distribution limitations.',
+    discussion: 'The term security marking refers to the application or use of human-readable security attributes.' },
+  { id: '3.8.5', familyId: 'MP', title: 'Media Transport Access', cmmcLevel: 2,
+    description: 'Control access to media containing CUI and maintain accountability for media during transport outside of controlled areas.',
+    discussion: 'Controlled areas are areas or spaces for which organizations provide physical or procedural controls.' },
+  { id: '3.8.6', familyId: 'MP', title: 'Portable Storage Encryption', cmmcLevel: 2,
+    description: 'Implement cryptographic mechanisms to protect the confidentiality of CUI stored on digital media during transport unless otherwise protected by alternative physical safeguards.',
+    discussion: 'This requirement addresses the protection of digital media containing CUI during transport.' },
+  { id: '3.8.7', familyId: 'MP', title: 'Removable Media Control', cmmcLevel: 2,
+    description: 'Control the use of removable media on system components.',
+    discussion: 'In contrast to requirement 3.8.1, which restricts user access to media, this requirement restricts the use of certain types of media.' },
+  { id: '3.8.8', familyId: 'MP', title: 'Shared Media', cmmcLevel: 2,
+    description: 'Prohibit the use of portable storage devices when such devices have no identifiable owner.',
+    discussion: 'Requiring identifiable owners for portable storage devices reduces the risk of using such technology by allowing organizations to assign responsibility.' },
+  { id: '3.8.9', familyId: 'MP', title: 'Backup Storage', cmmcLevel: 2,
+    description: 'Protect the confidentiality of backup CUI at storage locations.',
+    discussion: 'Organizations can employ cryptographic mechanisms or alternative physical controls to protect the confidentiality of backup information.' },
+
+  // PERSONNEL SECURITY (PS) - 2 practices
+  { id: '3.9.1', familyId: 'PS', title: 'Personnel Screening', cmmcLevel: 2,
+    description: 'Screen individuals prior to authorizing access to organizational systems containing CUI.',
+    discussion: 'Personnel security screening and rescreening activities reflect applicable laws, regulations, and policies.' },
+  { id: '3.9.2', familyId: 'PS', title: 'Personnel Actions', cmmcLevel: 2,
+    description: 'Ensure that organizational systems containing CUI are protected during and after personnel actions such as terminations and transfers.',
+    discussion: 'Protecting organizational systems during and after personnel actions may include returning system-related property.' },
+
+  // PHYSICAL PROTECTION (PE) - 6 practices
+  { id: '3.10.1', familyId: 'PE', title: 'Physical Access Limitation', cmmcLevel: 1,
+    description: 'Limit physical access to organizational systems, equipment, and the respective operating environments to authorized individuals.',
+    discussion: 'This requirement applies to employees, individuals with permanent physical access authorization credentials, and visitors.' },
+  { id: '3.10.2', familyId: 'PE', title: 'Physical Access Protection', cmmcLevel: 2,
+    description: 'Protect and monitor the physical facility and support infrastructure for organizational systems.',
+    discussion: 'Monitoring of physical access includes publicly accessible areas within organizational facilities.' },
+  { id: '3.10.3', familyId: 'PE', title: 'Visitor Escort', cmmcLevel: 2,
+    description: 'Escort visitors and monitor visitor activity.',
+    discussion: 'Visitors and organizations determine visitor access requirements.' },
+  { id: '3.10.4', familyId: 'PE', title: 'Physical Access Logs', cmmcLevel: 2,
+    description: 'Maintain audit logs of physical access.',
+    discussion: 'Organizations have flexibility in the types of audit logs employed.' },
+  { id: '3.10.5', familyId: 'PE', title: 'Physical Access Devices', cmmcLevel: 2,
+    description: 'Control and manage physical access devices.',
+    discussion: 'Physical access devices include keys, locks, combinations, and card readers.' },
+  { id: '3.10.6', familyId: 'PE', title: 'Alternative Work Sites', cmmcLevel: 2,
+    description: 'Enforce safeguarding measures for CUI at alternate work sites.',
+    discussion: 'Alternate work sites may include government facilities or private residences of employees.' },
+
+  // RISK ASSESSMENT (RA) - 3 practices
+  { id: '3.11.1', familyId: 'RA', title: 'Risk Assessment', cmmcLevel: 2,
+    description: 'Periodically assess the risk to organizational operations (including mission, functions, image, or reputation), organizational assets, and individuals, resulting from the operation of organizational systems and the associated processing, storage, or transmission of CUI.',
+    discussion: 'Risk assessments consider threats, vulnerabilities, likelihood, and impact.' },
+  { id: '3.11.2', familyId: 'RA', title: 'Vulnerability Scanning', cmmcLevel: 2,
+    description: 'Scan for vulnerabilities in organizational systems and applications periodically and when new vulnerabilities affecting those systems and applications are identified.',
+    discussion: 'Organizations determine the required vulnerability scanning for all system components.' },
+  { id: '3.11.3', familyId: 'RA', title: 'Vulnerability Remediation', cmmcLevel: 2,
+    description: 'Remediate vulnerabilities in accordance with risk assessments.',
+    discussion: 'Vulnerabilities discovered through vulnerability scanning activities should be remediated.' },
+
+  // SECURITY ASSESSMENT (CA) - 4 practices
+  { id: '3.12.1', familyId: 'CA', title: 'Security Control Assessment', cmmcLevel: 2,
+    description: 'Periodically assess the security controls in organizational systems to determine if the controls are effective in their application.',
+    discussion: 'Organizations assess security controls in organizational systems.' },
+  { id: '3.12.2', familyId: 'CA', title: 'Plan of Action', cmmcLevel: 2,
+    description: 'Develop and implement plans of action designed to correct deficiencies and reduce or eliminate vulnerabilities in organizational systems.',
+    discussion: 'Plans of action are the primary tools for documenting how identified issues will be resolved.' },
+  { id: '3.12.3', familyId: 'CA', title: 'Security Continuous Monitoring', cmmcLevel: 2,
+    description: 'Monitor security controls on an ongoing basis to ensure the continued effectiveness of the controls.',
+    discussion: 'Continuous monitoring programs facilitate ongoing awareness of threats, vulnerabilities, and information security.' },
+  { id: '3.12.4', familyId: 'CA', title: 'System Security Plans', cmmcLevel: 2,
+    description: 'Develop, document, and periodically update system security plans that describe system boundaries, system environments of operation, how security requirements are implemented, and the relationships with or connections to other systems.',
+    discussion: 'System security plans relate security requirements to a set of security controls and control enhancements.' },
+
+  // SYSTEM AND COMMUNICATIONS PROTECTION (SC) - 16 practices
+  { id: '3.13.1', familyId: 'SC', title: 'Boundary Protection', cmmcLevel: 2,
+    description: 'Monitor, control, and protect communications (i.e., information transmitted or received by organizational systems) at the external boundaries and key internal boundaries of organizational systems.',
+    discussion: 'Communications can be monitored, controlled, and protected at boundary components.' },
+  { id: '3.13.2', familyId: 'SC', title: 'Security Architecture', cmmcLevel: 2,
+    description: 'Employ architectural designs, software development techniques, and systems engineering principles that promote effective information security within organizational systems.',
+    discussion: 'Organizations apply systems engineering principles to new development systems.' },
+  { id: '3.13.3', familyId: 'SC', title: 'Role Separation', cmmcLevel: 2,
+    description: 'Separate user functionality from system management functionality.',
+    discussion: 'System management functionality includes functions necessary to administer databases.' },
+  { id: '3.13.4', familyId: 'SC', title: 'Shared Resource Control', cmmcLevel: 2,
+    description: 'Prevent unauthorized and unintended information transfer via shared system resources.',
+    discussion: 'This requirement prevents information, including encrypted representations of information, produced by the actions of prior users.' },
+  { id: '3.13.5', familyId: 'SC', title: 'Publicly Accessible Subnetwork', cmmcLevel: 1,
+    description: 'Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.',
+    discussion: 'Subnetworks that are physically or logically separated from internal networks are referred to as demilitarized zones (DMZs).' },
+  { id: '3.13.6', familyId: 'SC', title: 'Network Communication by Exception', cmmcLevel: 2,
+    description: 'Deny network communications traffic by default and allow network communications traffic by exception (i.e., deny all, permit by exception).',
+    discussion: 'This requirement applies to inbound and outbound network communications traffic.' },
+  { id: '3.13.7', familyId: 'SC', title: 'Split Tunneling', cmmcLevel: 2,
+    description: 'Prevent remote devices from simultaneously establishing non-remote connections with organizational systems and communicating via some other connection to resources in external networks (i.e., split tunneling).',
+    discussion: 'Split tunneling might be desirable by remote users to communicate with local system resources.' },
+  { id: '3.13.8', familyId: 'SC', title: 'Data in Transit', cmmcLevel: 2,
+    description: 'Implement cryptographic mechanisms to prevent unauthorized disclosure of CUI during transmission unless otherwise protected by alternative physical safeguards.',
+    discussion: 'This requirement applies to both internal and external networks.' },
+  { id: '3.13.9', familyId: 'SC', title: 'Connection Termination', cmmcLevel: 2,
+    description: 'Terminate network connections associated with communications sessions at the end of the sessions or after a defined period of inactivity.',
+    discussion: 'This requirement applies to both internal and external networks.' },
+  { id: '3.13.10', familyId: 'SC', title: 'Key Management', cmmcLevel: 2,
+    description: 'Establish and manage cryptographic keys for cryptography employed in organizational systems.',
+    discussion: 'Cryptographic key management and establishment can be performed using manual procedures or automated mechanisms.' },
+  { id: '3.13.11', familyId: 'SC', title: 'CUI Encryption', cmmcLevel: 2,
+    description: 'Employ FIPS-validated cryptography when used to protect the confidentiality of CUI.',
+    discussion: 'Cryptography can be employed to support many security solutions.' },
+  { id: '3.13.12', familyId: 'SC', title: 'Collaborative Computing', cmmcLevel: 2,
+    description: 'Prohibit remote activation of collaborative computing devices and provide indication of devices in use to users present at the device.',
+    discussion: 'Collaborative computing devices include networked white boards, cameras, and microphones.' },
+  { id: '3.13.13', familyId: 'SC', title: 'Mobile Code', cmmcLevel: 2,
+    description: 'Control and monitor the use of mobile code.',
+    discussion: 'Mobile code technologies include Java, JavaScript, ActiveX, Postscript, PDF, Flash animations, and VBScript.' },
+  { id: '3.13.14', familyId: 'SC', title: 'Voice over IP', cmmcLevel: 2,
+    description: 'Control and monitor the use of Voice over Internet Protocol (VoIP) technologies.',
+    discussion: 'VoIP has different security implications if used internally.' },
+  { id: '3.13.15', familyId: 'SC', title: 'Communications Authenticity', cmmcLevel: 2,
+    description: 'Protect the authenticity of communications sessions.',
+    discussion: 'This requirement addresses communications protection at the session level.' },
+  { id: '3.13.16', familyId: 'SC', title: 'Data at Rest', cmmcLevel: 2,
+    description: 'Protect the confidentiality of CUI at rest.',
+    discussion: 'Information at rest refers to the state of information when it is not in process or in transit.' },
+
+  // SYSTEM AND INFORMATION INTEGRITY (SI) - 7 practices
+  { id: '3.14.1', familyId: 'SI', title: 'Flaw Remediation', cmmcLevel: 1,
+    description: 'Identify, report, and correct system flaws in a timely manner.',
+    discussion: 'Organizations identify systems affected by announced software and firmware flaws.' },
+  { id: '3.14.2', familyId: 'SI', title: 'Malicious Code Protection', cmmcLevel: 1,
+    description: 'Provide protection from malicious code at designated locations within organizational systems.',
+    discussion: 'Designated locations include system entry and exit points.' },
+  { id: '3.14.3', familyId: 'SI', title: 'Security Alerts', cmmcLevel: 2,
+    description: 'Monitor system security alerts and advisories and take action in response.',
+    discussion: 'There are many publicly available sources of security alerts and advisories.' },
+  { id: '3.14.4', familyId: 'SI', title: 'Update Malicious Code Protection', cmmcLevel: 1,
+    description: 'Update malicious code protection mechanisms when new releases are available.',
+    discussion: 'Malicious code protection mechanisms include anti-virus signature definitions and reputation-based technologies.' },
+  { id: '3.14.5', familyId: 'SI', title: 'System & File Scanning', cmmcLevel: 1,
+    description: 'Perform periodic scans of organizational systems and real-time scans of files from external sources as files are downloaded, opened, or executed.',
+    discussion: 'Periodic scans of organizational systems and real-time scans of files from external sources.' },
+  { id: '3.14.6', familyId: 'SI', title: 'Communications Monitoring', cmmcLevel: 2,
+    description: 'Monitor organizational systems, including inbound and outbound communications traffic, to detect attacks and indicators of potential attacks.',
+    discussion: 'System monitoring includes external and internal monitoring.' },
+  { id: '3.14.7', familyId: 'SI', title: 'Unauthorized Use Detection', cmmcLevel: 2,
+    description: 'Identify unauthorized use of organizational systems.',
+    discussion: 'This requirement addresses the unauthorized use of organizational systems.' },
+];
+
+async function main() {
+  console.log('Seeding CMMC database...');
+
+  // Clear existing data
+  await prisma.milestone.deleteMany();
+  await prisma.evidence.deleteMany();
+  await prisma.pOAM.deleteMany();
+  await prisma.assessment.deleteMany();
+  await prisma.practice.deleteMany();
+  await prisma.controlFamily.deleteMany();
+  await prisma.systemInfo.deleteMany();
+
+  // Seed control families
+  console.log('Creating control families...');
+  for (const family of controlFamilies) {
+    await prisma.controlFamily.create({ data: family });
+  }
+
+  // Seed practices
+  console.log('Creating practices...');
+  for (const practice of practices) {
+    await prisma.practice.create({ data: practice });
+  }
+
+  // Create initial assessments for all practices
+  console.log('Creating initial assessments...');
+  for (const practice of practices) {
+    await prisma.assessment.create({
+      data: {
+        practiceId: practice.id,
+        status: 'NOT_STARTED',
+      },
+    });
+  }
+
+  // Create default system info
+  await prisma.systemInfo.create({
+    data: {
+      systemName: 'CMMC Compliance System',
+      systemDescription: 'System for tracking CMMC compliance',
+    },
+  });
+
+  console.log('Seeding complete!');
+  console.log(`Created ${controlFamilies.length} control families`);
+  console.log(`Created ${practices.length} practices`);
+  console.log(`Level 1 practices: ${practices.filter(p => p.cmmcLevel === 1).length}`);
+  console.log(`Level 2 practices: ${practices.filter(p => p.cmmcLevel === 2).length}`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

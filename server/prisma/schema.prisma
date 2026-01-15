@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NIST 800-171 Control Families
+model ControlFamily {
+  id          String    @id
+  name        String
+  description String?
+  practices   Practice[]
+}
+
+// Individual practices/controls from NIST 800-171
+model Practice {
+  id              String    @id // e.g., "3.1.1"
+  familyId        String
+  family          ControlFamily @relation(fields: [familyId], references: [id])
+  title           String
+  description     String
+  discussion      String?
+  cmmcLevel       Int       // 1 or 2
+  nistControls    String?   // Related NIST SP 800-53 controls
+  assessments     Assessment[]
+  poams           POAM[]
+  evidence        Evidence[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Assessment status for each practice
+model Assessment {
+  id            String   @id @default(uuid())
+  practiceId    String
+  practice      Practice @relation(fields: [practiceId], references: [id])
+  status        AssessmentStatus @default(NOT_STARTED)
+  notes         String?
+  assessedBy    String?
+  assessedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([practiceId])
+}
+
+enum AssessmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  IMPLEMENTED
+  NOT_APPLICABLE
+}
+
+// Plan of Action and Milestones
+model POAM {
+  id              String   @id @default(uuid())
+  practiceId      String
+  practice        Practice @relation(fields: [practiceId], references: [id])
+  weakness        String   // Description of the gap/weakness
+  milestones      Milestone[]
+  resources       String?  // Required resources
+  scheduledCompletionDate DateTime?
+  actualCompletionDate    DateTime?
+  status          POAMStatus @default(OPEN)
+  assignedTo      String?
+  priority        Priority @default(MEDIUM)
+  comments        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Milestone {
+  id          String   @id @default(uuid())
+  poamId      String
+  poam        POAM     @relation(fields: [poamId], references: [id], onDelete: Cascade)
+  description String
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum POAMStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Evidence/artifacts linked to practices
+model Evidence {
+  id          String   @id @default(uuid())
+  practiceId  String
+  practice    Practice @relation(fields: [practiceId], references: [id])
+  name        String
+  description String?
+  fileType    String?
+  filePath    String?
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// System Security Plan metadata
+model SystemInfo {
+  id                    String   @id @default(uuid())
+  systemName            String
+  systemDescription     String?
+  systemOwner           String?
+  securityOfficer       String?
+  systemBoundary        String?
+  networkArchitecture   String?
+  dataFlowDescription   String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
