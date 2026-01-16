@@ -598,8 +598,17 @@ app.get('/api/reports/compliance-by-family', async (req, res) => {
 // ============ SYSTEM INFO ============
 app.get('/api/system-info', async (req, res) => {
   try {
-    // Get the first (and should be only) system info record
-    let systemInfo = await prisma.systemInfo.findFirst();
+    // Get the first (and should be only) system info record with all related data
+    let systemInfo = await prisma.systemInfo.findFirst({
+      include: {
+        personnel: { orderBy: { sortOrder: 'asc' } },
+        dataTypes: { orderBy: { sortOrder: 'asc' } },
+        physicalLocations: { orderBy: { sortOrder: 'asc' } },
+        interconnections: { orderBy: { sortOrder: 'asc' } },
+        lawsRegulations: { orderBy: { sortOrder: 'asc' } },
+        sspVersions: { orderBy: { changeDate: 'desc' } },
+      },
+    });
 
     // If none exists, create a default one
     if (!systemInfo) {
@@ -608,6 +617,14 @@ app.get('/api/system-info', async (req, res) => {
           organizationName: '',
           systemName: 'New System',
           versionNumber: '1.0',
+        },
+        include: {
+          personnel: true,
+          dataTypes: true,
+          physicalLocations: true,
+          interconnections: true,
+          lawsRegulations: true,
+          sspVersions: true,
         },
       });
     }
@@ -623,6 +640,7 @@ app.put('/api/system-info', async (req, res) => {
     const {
       organizationName,
       systemName,
+      uniqueIdentifier,
       systemDescription,
       systemOwner,
       securityOfficer,
@@ -633,45 +651,67 @@ app.put('/api/system-info', async (req, res) => {
       preparedBy,
       preparedDate,
       versionNumber,
+      operationalStatus,
+      systemType,
+      systemTypeDescription,
+      environmentDescription,
+      confidentialityLevel,
+      integrityLevel,
+      availabilityLevel,
+      overallCategorization,
     } = req.body;
 
     // Get existing system info or create new
     const existing = await prisma.systemInfo.findFirst();
 
+    const data = {
+      organizationName,
+      systemName,
+      uniqueIdentifier,
+      systemDescription,
+      systemOwner,
+      securityOfficer,
+      systemBoundary,
+      networkArchitecture,
+      dataFlowDescription,
+      informationTypes,
+      preparedBy,
+      preparedDate: preparedDate ? new Date(preparedDate) : null,
+      versionNumber,
+      operationalStatus,
+      systemType,
+      systemTypeDescription,
+      environmentDescription,
+      confidentialityLevel,
+      integrityLevel,
+      availabilityLevel,
+      overallCategorization,
+    };
+
     let systemInfo;
     if (existing) {
       systemInfo = await prisma.systemInfo.update({
         where: { id: existing.id },
-        data: {
-          organizationName,
-          systemName,
-          systemDescription,
-          systemOwner,
-          securityOfficer,
-          systemBoundary,
-          networkArchitecture,
-          dataFlowDescription,
-          informationTypes,
-          preparedBy,
-          preparedDate: preparedDate ? new Date(preparedDate) : null,
-          versionNumber,
+        data,
+        include: {
+          personnel: { orderBy: { sortOrder: 'asc' } },
+          dataTypes: { orderBy: { sortOrder: 'asc' } },
+          physicalLocations: { orderBy: { sortOrder: 'asc' } },
+          interconnections: { orderBy: { sortOrder: 'asc' } },
+          lawsRegulations: { orderBy: { sortOrder: 'asc' } },
+          sspVersions: { orderBy: { changeDate: 'desc' } },
         },
       });
     } else {
       systemInfo = await prisma.systemInfo.create({
-        data: {
-          organizationName,
-          systemName,
-          systemDescription,
-          systemOwner,
-          securityOfficer,
-          systemBoundary,
-          networkArchitecture,
-          dataFlowDescription,
-          informationTypes,
-          preparedBy,
-          preparedDate: preparedDate ? new Date(preparedDate) : null,
-          versionNumber,
+        data,
+        include: {
+          personnel: true,
+          dataTypes: true,
+          physicalLocations: true,
+          interconnections: true,
+          lawsRegulations: true,
+          sspVersions: true,
         },
       });
     }
@@ -682,7 +722,363 @@ app.put('/api/system-info', async (req, res) => {
   }
 });
 
+// ============ PERSONNEL ============
+app.post('/api/system-info/personnel', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const personnel = await prisma.personnel.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+      },
+    });
+    res.status(201).json(personnel);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info/personnel/:id', async (req, res) => {
+  try {
+    const personnel = await prisma.personnel.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+    res.json(personnel);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/personnel/:id', async (req, res) => {
+  try {
+    await prisma.personnel.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ DATA TYPES ============
+app.post('/api/system-info/data-types', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const dataType = await prisma.dataType.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+      },
+    });
+    res.status(201).json(dataType);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info/data-types/:id', async (req, res) => {
+  try {
+    const dataType = await prisma.dataType.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+    res.json(dataType);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/data-types/:id', async (req, res) => {
+  try {
+    await prisma.dataType.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ PHYSICAL LOCATIONS ============
+app.post('/api/system-info/physical-locations', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const location = await prisma.physicalLocation.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+      },
+    });
+    res.status(201).json(location);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info/physical-locations/:id', async (req, res) => {
+  try {
+    const location = await prisma.physicalLocation.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+    res.json(location);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/physical-locations/:id', async (req, res) => {
+  try {
+    await prisma.physicalLocation.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ INTERCONNECTIONS ============
+app.post('/api/system-info/interconnections', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const interconnection = await prisma.interconnection.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+      },
+    });
+    res.status(201).json(interconnection);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info/interconnections/:id', async (req, res) => {
+  try {
+    const interconnection = await prisma.interconnection.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+    res.json(interconnection);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/interconnections/:id', async (req, res) => {
+  try {
+    await prisma.interconnection.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ LAWS & REGULATIONS ============
+app.post('/api/system-info/laws-regulations', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const law = await prisma.lawRegulation.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+      },
+    });
+    res.status(201).json(law);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/system-info/laws-regulations/:id', async (req, res) => {
+  try {
+    const law = await prisma.lawRegulation.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+    res.json(law);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/laws-regulations/:id', async (req, res) => {
+  try {
+    await prisma.lawRegulation.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ SSP VERSIONS (Record of Changes) ============
+app.post('/api/system-info/ssp-versions', async (req, res) => {
+  try {
+    const systemInfo = await prisma.systemInfo.findFirst();
+    if (!systemInfo) {
+      return res.status(400).json({ error: 'System info must be created first' });
+    }
+
+    const version = await prisma.sSPVersion.create({
+      data: {
+        systemInfoId: systemInfo.id,
+        ...req.body,
+        changeDate: req.body.changeDate ? new Date(req.body.changeDate) : new Date(),
+      },
+    });
+    res.status(201).json(version);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/system-info/ssp-versions/:id', async (req, res) => {
+  try {
+    await prisma.sSPVersion.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ SSP GENERATION ============
+
+// Full SSP data endpoint for browser preview
+app.get('/api/ssp/full-data', async (req, res) => {
+  try {
+    // Get system info with all related data
+    const systemInfo = await prisma.systemInfo.findFirst({
+      include: {
+        personnel: { orderBy: { sortOrder: 'asc' } },
+        dataTypes: { orderBy: { sortOrder: 'asc' } },
+        physicalLocations: { orderBy: { sortOrder: 'asc' } },
+        interconnections: { orderBy: { sortOrder: 'asc' } },
+        lawsRegulations: { orderBy: { sortOrder: 'asc' } },
+        sspVersions: { orderBy: { changeDate: 'desc' } },
+      },
+    });
+
+    // Get all control families with practices, assessments, evidence, and POAMs
+    const families = await prisma.controlFamily.findMany({
+      include: {
+        practices: {
+          include: {
+            assessments: true,
+            evidence: true,
+            poams: {
+              include: { milestones: true },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    // Calculate statistics per family and overall
+    let totalImplemented = 0;
+    let totalNotImplemented = 0;
+    let totalNotApplicable = 0;
+    let totalNotEvaluated = 0;
+    let sprsScore = 110;
+
+    const familyStats = families.map((family) => {
+      const stats = {
+        familyId: family.id,
+        familyName: family.name,
+        totalPractices: family.practices.length,
+        implemented: 0,
+        notImplemented: 0,
+        notApplicable: 0,
+        notEvaluated: 0,
+        assessmentObjectives: 0,
+      };
+
+      family.practices.forEach((practice) => {
+        const assessment = practice.assessments[0];
+        const status = assessment?.status || 'NOT_STARTED';
+
+        if (status === 'IMPLEMENTED') {
+          stats.implemented++;
+          totalImplemented++;
+        } else if (status === 'NOT_APPLICABLE') {
+          stats.notApplicable++;
+          totalNotApplicable++;
+        } else if (status === 'IN_PROGRESS') {
+          stats.notImplemented++;
+          totalNotImplemented++;
+          sprsScore -= practice.cmmcLevel === 1 ? 5 : 1;
+        } else {
+          stats.notEvaluated++;
+          totalNotEvaluated++;
+          sprsScore -= practice.cmmcLevel === 1 ? 5 : 1;
+        }
+      });
+
+      // Calculate compliance percentage (excluding N/A from denominator)
+      const applicableTotal = stats.totalPractices - stats.notApplicable;
+      stats.compliancePercentage = applicableTotal > 0
+        ? Math.round((stats.implemented / applicableTotal) * 100)
+        : 100;
+
+      return stats;
+    });
+
+    // Get all open POAMs for summary
+    const openPoams = await prisma.pOAM.findMany({
+      where: { status: { not: 'COMPLETED' } },
+      include: {
+        practice: { include: { family: true } },
+        milestones: true,
+      },
+      orderBy: { scheduledCompletionDate: 'asc' },
+    });
+
+    // Calculate overall statistics
+    const totalPractices = families.reduce((sum, f) => sum + f.practices.length, 0);
+    const applicableTotal = totalPractices - totalNotApplicable;
+    const overallCompliance = applicableTotal > 0
+      ? Math.round((totalImplemented / applicableTotal) * 100)
+      : 100;
+
+    res.json({
+      systemInfo: systemInfo || {},
+      families,
+      familyStats,
+      overallStats: {
+        totalPractices,
+        implemented: totalImplemented,
+        notImplemented: totalNotImplemented,
+        notApplicable: totalNotApplicable,
+        notEvaluated: totalNotEvaluated,
+        compliancePercentage: overallCompliance,
+        sprsScore: Math.max(-203, sprsScore),
+      },
+      openPoams,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('SSP Full Data Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/ssp/preview', async (req, res) => {
   try {
     const systemInfo = await prisma.systemInfo.findFirst();

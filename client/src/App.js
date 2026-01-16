@@ -6,6 +6,7 @@ import PracticeDetail from './pages/PracticeDetail';
 import POAMs from './pages/POAMs';
 import Reports from './pages/Reports';
 import SystemInfo from './pages/SystemInfo';
+import SSPPreview from './pages/SSPPreview';
 
 // Dynamically determine API URL based on current hostname
 const getApiUrl = () => {
@@ -87,6 +88,7 @@ function App() {
             <Route path="/practices/:id" element={<PracticeDetail />} />
             <Route path="/poams" element={<POAMs />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/ssp-preview" element={<SSPPreview />} />
             <Route path="/system-info" element={<SystemInfo />} />
           </Routes>
         </main>

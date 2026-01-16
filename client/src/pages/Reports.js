@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../App';
 
 function Reports() {
@@ -8,6 +9,7 @@ function Reports() {
   const [sspPreview, setSspPreview] = useState(null);
   const [loadingSsp, setLoadingSsp] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([
@@ -236,6 +238,12 @@ function Reports() {
             <div className="ssp-actions">
               <button
                 className="btn btn-primary"
+                onClick={() => navigate('/ssp-preview')}
+              >
+                View Full SSP Preview
+              </button>
+              <button
+                className="btn btn-secondary"
                 onClick={generateSsp}
                 disabled={generating}
               >
@@ -246,7 +254,7 @@ function Reports() {
                 onClick={fetchSspPreview}
                 disabled={loadingSsp}
               >
-                Refresh Preview
+                Refresh Stats
               </button>
             </div>
           </div>

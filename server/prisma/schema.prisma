@@ -44,6 +44,10 @@ model Assessment {
   responsibleRole         String?  // Role/person responsible for this control
   assessedBy              String?
   assessedAt              DateTime?
+  // Enhanced fields for SSP
+  findings                String?  // Assessment findings
+  recommendations         String?  // Recommendations for improvement
+  validationMethods       String?  // Artifacts/methods used to validate implementation
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
@@ -116,11 +120,12 @@ model Evidence {
   updatedAt   DateTime @updatedAt
 }
 
-// System Security Plan metadata
+// System Security Plan metadata - Enhanced
 model SystemInfo {
   id                    String   @id @default(uuid())
   organizationName      String?
   systemName            String
+  uniqueIdentifier      String?  // e.g., "GoG-IS"
   systemDescription     String?
   systemOwner           String?
   securityOfficer       String?
@@ -131,6 +136,132 @@ model SystemInfo {
   preparedBy            String?
   preparedDate          DateTime?
   versionNumber         String?  @default("1.0")
+
+  // New fields for enhanced SSP
+  operationalStatus     OperationalStatus @default(OPERATIONAL)
+  systemType            String?  // e.g., "General Support System"
+  systemTypeDescription String?  // Detailed description of system type
+  environmentDescription String? // System environment description
+
+  // CIA Categorization
+  confidentialityLevel  ImpactLevel @default(MODERATE)
+  integrityLevel        ImpactLevel @default(LOW)
+  availabilityLevel     ImpactLevel @default(LOW)
+  overallCategorization ImpactLevel @default(MODERATE)
+
+  // Diagram paths
+  systemDiagramPath     String?
+  dataFlowDiagramPath   String?
+
+  // Related entities
+  personnel             Personnel[]
+  dataTypes             DataType[]
+  physicalLocations     PhysicalLocation[]
+  interconnections      Interconnection[]
+  lawsRegulations       LawRegulation[]
+  sspVersions           SSPVersion[]
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+enum OperationalStatus {
+  OPERATIONAL
+  UNDER_DEVELOPMENT
+  MAJOR_MODIFICATION
+}
+
+enum ImpactLevel {
+  LOW
+  MODERATE
+  HIGH
+}
+
+// Personnel/Roles for SSP Section 2
+model Personnel {
+  id              String   @id @default(uuid())
+  systemInfoId    String
+  systemInfo      SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  name            String
+  role            String   // e.g., "CEO", "IT Security Lead"
+  title           String?  // Job title
+  email           String?
+  phone           String?
+  roleDefinition  String?  // Description of what this role does
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// System Data Types with CIA Impact (Section 3.5)
+model DataType {
+  id                    String   @id @default(uuid())
+  systemInfoId          String
+  systemInfo            SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  name                  String   // e.g., "Contract Sales Artifacts (CUI)"
+  description           String?  // Description of the data type
+  confidentialityImpact ImpactLevel @default(MODERATE)
+  integrityImpact       ImpactLevel @default(LOW)
+  availabilityImpact    ImpactLevel @default(LOW)
+  sortOrder             Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Physical Locations (Section 3.10.2)
+model PhysicalLocation {
+  id              String   @id @default(uuid())
+  systemInfoId    String
+  systemInfo      SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  name            String   // e.g., "Virginia HQ"
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String?  @default("USA")
+  securityMeasures String? // Description of physical security
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// System Interconnections (Section 3.7)
+model Interconnection {
+  id              String   @id @default(uuid())
+  systemInfoId    String
+  systemInfo      SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  systemName      String   // Name of connected system
+  organizationName String? // Organization owning the system
+  connectionType  String?  // e.g., "VPN", "API", "Direct"
+  authorization   String?  // Authorization status/reference
+  sensitiveInfo   String?  // Types of sensitive info exchanged
+  description     String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Laws, Regulations & Policies (Section 3.8)
+model LawRegulation {
+  id              String   @id @default(uuid())
+  systemInfoId    String
+  systemInfo      SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  name            String   // e.g., "NIST SP800-171"
+  description     String?  // Full description
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// SSP Version History (Record of Changes)
+model SSPVersion {
+  id              String   @id @default(uuid())
+  systemInfoId    String
+  systemInfo      SystemInfo @relation(fields: [systemInfoId], references: [id], onDelete: Cascade)
+  versionNumber   String
+  changeDate      DateTime @default(now())
+  description     String   // Description of changes
+  changedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
