@@ -7,6 +7,10 @@ A web application for tracking NIST 800-171 compliance and generating System Sec
 
 ## Features
 
+## Screenshot
+
+<img width="1659" height="1124" alt="image" src="https://github.com/user-attachments/assets/3f973df0-1775-4fb2-b0e3-5bf690b79326" />
+
 ### Dashboard
 - **SPRS Score Gauge** - Visual representation of your Supplier Performance Risk System score (-203 to 110)
 - **Compliance Donut Chart** - At-a-glance view of implementation status across all practices
